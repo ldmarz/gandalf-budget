@@ -1,0 +1,14 @@
+# Compiled binary
+gandalf-budget
+gandalf-budget.exe # For Windows
+
+# Frontend build output
+web/dist/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.idea/
+.vscode/
