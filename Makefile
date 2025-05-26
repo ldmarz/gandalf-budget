@@ -10,6 +10,10 @@ build_frontend:
 
 build_backend:
 	@echo "Building backend..."
+	@echo "Preparing embedded web assets..."
+	@rm -rf cmd/server/embedded_web_dist 
+	@mkdir -p cmd/server/embedded_web_dist
+	@cp -r web/dist/* cmd/server/embedded_web_dist/
 	@go build -ldflags="-s -w" -o gandalf-budget ./cmd/server
 
 run: build
@@ -19,6 +23,7 @@ run: build
 clean:
 	@echo "Cleaning up..."
 	@rm -f gandalf-budget
+	@rm -rf cmd/server/embedded_web_dist
 	@(cd web && rm -rf dist)
 	@echo "Done."
 

@@ -14,7 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-//go:embed all:web/dist
+//go:embed all:embedded_web_dist
 var staticFiles embed.FS
 
 func main() {
@@ -36,11 +36,10 @@ func main() {
 
 
 	log.Println("Setting up router...")
-	distFS, err := fs.Sub(staticFiles, "web/dist")
+	distFS, err := fs.Sub(staticFiles, "embedded_web_dist")
 	if err != nil {
-		log.Fatalf("Failed to create sub VFS for web/dist: %v", err)
+		log.Fatalf("Failed to create sub VFS for embedded_web_dist: %v", err)
 	}
-
 	router := httpinternal.NewRouter(distFS, db) // Pass db connection
 
 	log.Println("Starting HTTP server on :8080")
