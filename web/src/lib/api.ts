@@ -151,6 +151,21 @@ export async function updateActualLine(id: number, data: { actual: number }): Pr
   return put<ActualLine, typeof data>(`/actual-lines/${id}`, data);
 }
 
+// API function for Board Data
+export async function getBoardData(monthId: string | number): Promise<BudgetLine[]> {
+  return get<BudgetLine[]>(`/board-data/${monthId}`);
+}
+
+// API function for Finalizing Month
+interface FinalizeMonthResponse {
+  message: string; // e.g., "Month finalized successfully"
+  new_month_id: number;
+}
+
+export async function finalizeMonth(monthId: string | number): Promise<FinalizeMonthResponse> {
+  return put<FinalizeMonthResponse, null>(`/months/${monthId}/finalize`, null); // No body for this PUT request
+}
+
 // --- Existing Category types and functions for context ---
 export interface Category {
   id: number;

@@ -8,7 +8,12 @@ type Category struct {
 }
 
 // Add other models here as needed, e.g.:
-// type Month struct { ... }
+type Month struct {
+	ID        int64 `json:"id" db:"id"`
+	Year      int   `json:"year" db:"year"`
+	Month     int   `json:"month" db:"month"`
+	Finalized bool  `json:"finalized" db:"finalized"`
+}
 
 // BudgetLine represents a line item in a monthly budget.
 type BudgetLine struct {
@@ -28,4 +33,9 @@ type ActualLine struct {
 	Actual       float64 `json:"actual" db:"actual"`
 }
 
-// type AnnualSnap struct { ... }
+type AnnualSnap struct {
+	ID        int64  `json:"id" db:"id"`
+	MonthID   int64  `json:"month_id" db:"month_id"` // Assuming month IDs can be int64
+	SnapJSON  string `json:"snap_json" db:"snap_json"`
+	CreatedAt string `json:"created_at" db:"created_at"` // Or time.Time, but string is simpler for now if PRD implies DATETIME text
+}
