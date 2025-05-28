@@ -9,26 +9,33 @@ import (
 
 // Category struct (as defined in models.go)
 
-// GetAllCategories ... (as before)
-func GetAllCategories(db *sqlx.DB) ([]Category, error) {
+// GetAllCategories retrieves all categories from the database, ordered by name.
+// It returns an empty slice if no categories are found.
+func (s *sqlStore) GetAllCategories() ([]Category, error) {
 	var categories []Category
-	err := db.Select(&categories, "SELECT id, name, color FROM categories ORDER BY name ASC")
+	err := s.DB.Select(&categories, "SELECT id, name, color FROM categories ORDER BY name ASC")
 	if err != nil {
 		log.Printf("Error getting all categories: %v", err)
 		return nil, err
 	}
 	if categories == nil {
-		categories = []Category{} 
+		categories = []Category{}
 	}
 	return categories, nil
 }
 
-// CreateCategory ... (as before)
-func CreateCategory(db *sqlx.DB, category *Category) error {
-	if category.Name == "" { return fmt.Errorf("category name cannot be empty") }
-	if category.Color == "" { return fmt.Errorf("category color cannot be empty") }
+// CreateCategory inserts a new category into the database.
+// It requires Name and Color to be set on the Category struct.
+// The ID of the newly created category is set on the input Category struct.
+func (s *sqlStore) CreateCategory(category *Category) error {
+	if category.Name == "" {
+		return fmt.Errorf("category name cannot be empty")
+	}
+	if category.Color == "" {
+		return fmt.Errorf("category color cannot be empty")
+	}
 	query := `INSERT INTO categories (name, color) VALUES (?, ?)`
-	res, err := db.Exec(query, category.Name, category.Color)
+	res, err := s.DB.Exec(query, category.Name, category.Color)
 	if err != nil {
 		log.Printf("Error creating category '%s': %v", category.Name, err)
 		return fmt.Errorf("failed to insert category: %w", err)
@@ -44,9 +51,10 @@ func CreateCategory(db *sqlx.DB, category *Category) error {
 }
 
 // GetCategoryByID retrieves a single category by its ID.
-func GetCategoryByID(db *sqlx.DB, id int64) (*Category, error) {
+// It returns nil if the category is not found.
+func (s *sqlStore) GetCategoryByID(id int64) (*Category, error) {
 	var category Category
-	err := db.Get(&category, "SELECT id, name, color FROM categories WHERE id = ?", id)
+	err := s.DB.Get(&category, "SELECT id, name, color FROM categories WHERE id = ?", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Category with ID %d not found: %v", id, err)
@@ -59,8 +67,9 @@ func GetCategoryByID(db *sqlx.DB, id int64) (*Category, error) {
 }
 
 // UpdateCategory updates an existing category in the database.
-// It ensures the ID in the category struct is used for the WHERE clause.
-func UpdateCategory(db *sqlx.DB, category *Category) error {
+// It requires ID, Name, and Color to be set on the Category struct.
+// Returns sql.ErrNoRows if no category with the given ID is found or if data was the same.
+func (s *sqlStore) UpdateCategory(category *Category) error {
 	if category.ID == 0 {
 		return fmt.Errorf("category ID cannot be zero for update")
 	}
@@ -72,7 +81,7 @@ func UpdateCategory(db *sqlx.DB, category *Category) error {
 	}
 
 	query := `UPDATE categories SET name = ?, color = ? WHERE id = ?`
-	res, err := db.Exec(query, category.Name, category.Color, category.ID)
+	res, err := s.DB.Exec(query, category.Name, category.Color, category.ID)
 	if err != nil {
 		log.Printf("Error updating category ID %d: %v", category.ID, err)
 		return fmt.Errorf("failed to update category: %w", err)
@@ -91,13 +100,14 @@ func UpdateCategory(db *sqlx.DB, category *Category) error {
 }
 
 // DeleteCategory removes a category from the database by its ID.
-func DeleteCategory(db *sqlx.DB, id int64) error {
+// Returns sql.ErrNoRows if no category with the given ID is found.
+func (s *sqlStore) DeleteCategory(id int64) error {
 	if id == 0 {
 		return fmt.Errorf("category ID cannot be zero for delete")
 	}
 
 	query := `DELETE FROM categories WHERE id = ?`
-	res, err := db.Exec(query, id)
+	res, err := s.DB.Exec(query, id)
 	if err != nil {
 		log.Printf("Error deleting category ID %d: %v", id, err)
 		return fmt.Errorf("failed to delete category: %w", err)

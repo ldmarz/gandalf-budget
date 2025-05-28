@@ -9,10 +9,13 @@ import (
 	"strings" // Required for path manipulation
 
 	"github.com/jmoiron/sqlx"
+
+	"gandalf-budget/internal/store" // Added for store.Store
 )
 
 func NewRouter(staticFS fs.FS, db *sqlx.DB) *http.ServeMux {
 	mux := http.NewServeMux()
+	appStore := store.NewSQLStore(db) // Create store instance
 
 	mux.HandleFunc("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -25,9 +28,9 @@ func NewRouter(staticFS fs.FS, db *sqlx.DB) *http.ServeMux {
 	mux.HandleFunc("/api/v1/categories", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			HandleGetCategories(db)(w, r)
+			HandleGetCategories(appStore)(w, r)
 		case http.MethodPost:
-			HandleCreateCategory(db)(w, r)
+			HandleCreateCategory(appStore)(w, r)
 		default:
 			http.Error(w, "Method not allowed for /api/v1/categories collection", http.StatusMethodNotAllowed)
 		}
@@ -48,16 +51,51 @@ func NewRouter(staticFS fs.FS, db *sqlx.DB) *http.ServeMux {
 
 		switch r.Method {
 		case http.MethodPut:
-			HandleUpdateCategory(db)(w, r)
+			HandleUpdateCategory(appStore)(w, r)
 		case http.MethodDelete:
-			HandleDeleteCategory(db)(w, r) // Added
+			HandleDeleteCategory(appStore)(w, r) // Added
 		// case http.MethodGet: // For getting a single category by ID
-			// HandleGetCategoryByID(db)(w,r) 
+			// HandleGetCategoryByID(appStore)(w,r) 
 		default:
 			http.Error(w, "Method not allowed for specific category item (/api/v1/categories/:id)", http.StatusMethodNotAllowed)
 		}
 	})
 
+	// Handler for /api/v1/budget-lines (collection)
+	mux.HandleFunc("/api/v1/budget-lines", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			CreateBudgetLineHandler(appStore)(w, r)
+		case http.MethodGet:
+			GetBudgetLinesByMonthIDHandler(appStore)(w, r) // Uses query param, not path param
+		default:
+			http.Error(w, "Method not allowed for /api/v1/budget-lines collection", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Handler for /api/v1/budget-lines/:id (specific item)
+	mux.HandleFunc("/api/v1/budget-lines/", func(w http.ResponseWriter, r *http.Request) {
+		// ID parsing will be done in handlers
+		switch r.Method {
+		case http.MethodPut:
+			UpdateBudgetLineHandler(appStore)(w, r)
+		case http.MethodDelete:
+			DeleteBudgetLineHandler(appStore)(w, r)
+		default:
+			http.Error(w, "Method not allowed for specific budget line item (/api/v1/budget-lines/:id)", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Handler for /api/v1/actual-lines/:id (specific item - only update for now)
+	mux.HandleFunc("/api/v1/actual-lines/", func(w http.ResponseWriter, r *http.Request) {
+		// ID parsing will be done in handlers
+		switch r.Method {
+		case http.MethodPut:
+			UpdateActualLineHandler(appStore)(w, r)
+		default:
+			http.Error(w, "Method not allowed for specific actual line item (/api/v1/actual-lines/:id)", http.StatusMethodNotAllowed)
+		}
+	})
 
 	// Static file serving (same as before)
 	fileServer := http.FileServer(http.FS(staticFS))

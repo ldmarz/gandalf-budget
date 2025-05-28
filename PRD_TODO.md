@@ -165,6 +165,41 @@ All responses `application/json`; errors return `{error:"message"}` with HTTP 4x
 _No pending questions._  If new doubts arise, add them here and agree before coding.
 
 ---
+## 10. Coding Principles
+This section outlines the general coding principles to be followed during the development of Gandalf the Budget. Adhering to these principles will help ensure the codebase is maintainable, understandable, and robust.
+
+### 10.1 YAGNI (You Ain't Gonna Need It)
+*   **Principle:** Implement features only when they are actively needed and part of the current requirements. Do not add functionality based on speculation that it might be useful in the future.
+*   **Rationale:** This approach helps to avoid over-engineering, reduces complexity, and prevents wasted effort on features that may never be used. It keeps the codebase lean and focused on delivering value for the defined scope.
+
+### 10.2 KISS (Keep It Simple, Stupid)
+*   **Principle:** Strive for simplicity in both design and implementation. Solutions should be straightforward, easy to understand, and avoid unnecessary complexity.
+*   **Rationale:** Simpler solutions are easier to develop, debug, maintain, and reason about. Complexity can often lead to more bugs and increased development time.
+
+### 10.3 DRY (Don't Repeat Yourself)
+*   **Principle:** Avoid duplication of code, logic, or data. Identify common patterns or functionalities and encapsulate them into reusable components, functions, modules, or services.
+*   **Rationale:** Duplication makes the codebase harder to maintain because changes need to be made in multiple places. This increases the risk of inconsistencies and bugs. DRY code is more maintainable and less error-prone.
+
+### 10.4 General Good Programming Practices
+Beyond the core principles above, the following practices are essential for a high-quality codebase:
+
+*   **Readability:**
+    *   Write code that is clear and easy for others (and your future self) to understand.
+    *   Use meaningful and consistent naming conventions for variables, functions, classes, etc.
+    *   Maintain consistent formatting and indentation.
+*   **Maintainability:**
+    *   Structure code in a way that makes it easy to modify, debug, and extend without unintended side effects.
+    *   Favor modular design where components are loosely coupled and have well-defined responsibilities.
+*   **Comments:**
+    *   Use comments to explain *why* something is done, or to clarify complex or non-obvious logic.
+    *   Avoid over-commenting obvious code. Well-written code should be largely self-documenting.
+    *   Keep comments up-to-date with code changes.
+*   **Testing:**
+    *   Write unit tests for individual components and functions to verify their correctness.
+    *   Consider integration tests for interactions between components.
+    *   Testing helps ensure code quality, prevents regressions, and provides confidence when refactoring or adding new features. (Specific testing strategies and coverage targets might be detailed in a separate document if needed).
+
+---
 # END (Original PRD)
 
 ---

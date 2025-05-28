@@ -22,6 +22,37 @@ func NewStore(dataSourceName string) (*sqlx.DB, error) {
 	return db, nil
 }
 
+// Store defines the interface for database operations.
+// It will include methods for categories, budget lines, and actuals.
+type Store interface {
+	// Category methods
+	GetAllCategories() ([]Category, error)
+	CreateCategory(category *Category) error
+	GetCategoryByID(id int64) (*Category, error)
+	UpdateCategory(category *Category) error
+	DeleteCategory(id int64) error
+
+	// BudgetLine and ActualLine methods
+	CreateBudgetLine(b *BudgetLine) (int64, error)
+	GetBudgetLinesByMonthID(monthID int) ([]BudgetLine, error)
+	UpdateBudgetLine(b *BudgetLine) error
+	DeleteBudgetLine(id int64) error
+	UpdateActualLine(a *ActualLine) error
+	GetActualLineByID(id int64) (*ActualLine, error)
+	GetBudgetLineByID(id int64) (*BudgetLine, error)
+}
+
+// sqlStore provides a concrete implementation of the Store interface
+// using an sqlx.DB database connection.
+type sqlStore struct {
+	*sqlx.DB
+}
+
+// NewSQLStore creates a new sqlStore with the given database connection.
+func NewSQLStore(db *sqlx.DB) Store {
+	return &sqlStore{DB: db}
+}
+
 // RunMigrations reads all *.sql files from the specified directory and executes them.
 // It attempts to make migrations idempotent by checking for "table already exists" errors.
 func RunMigrations(db *sqlx.DB, migrationsDir string) error {
