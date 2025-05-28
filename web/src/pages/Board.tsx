@@ -1,11 +1,12 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import * as api from '../lib/api'; // Assuming api.ts is in ../lib
-
-// Using existing Tailwind classes from Manage.tsx for consistency
-const inputClasses = "border border-gray-300 rounded px-2 py-1 text-black text-sm w-24"; // Adjusted for board
-const cardClasses = "bg-gray-800 p-4 rounded shadow-md mb-4";
-const textMutedClasses = "text-gray-400";
-const buttonClasses = "bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm";
+import { textMutedClasses } from '../styles/commonClasses'; // Removed cardClasses, buttonClasses, inputClasses
+import Card from '../components/ui/Card'; // Import Card component
+import Button from '../components/ui/Button'; // Import Button component
+import Input from '../components/ui/Input'; // Import Input component
+import LoadingSpinner from '../components/ui/LoadingSpinner'; // Import LoadingSpinner
+import MessageDisplay from '../components/ui/MessageDisplay'; // Import MessageDisplay
+import CategoryBadge from '../components/CategoryBadge'; // Import CategoryBadge
 
 export default function BoardPage() {
   const [boardLines, setBoardLines] = useState<api.BudgetLine[]>([]);
@@ -139,54 +140,46 @@ export default function BoardPage() {
     return 'bg-yellow-700 hover:bg-yellow-600'; 
   };
 
-  if (isLoadingCategories) return <div className="p-4 text-white">Loading categories...</div>;
+  if (isLoadingCategories) return <LoadingSpinner text="Loading categories..." />;
 
   return (
     <div className="p-4 bg-gray-900 min-h-screen text-white">
       <h1 className="text-2xl font-bold mb-6 text-center">Monthly Budget Board</h1>
 
-      <div className={`${cardClasses} mb-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0`}>
+      <Card className="mb-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-2">
           <label htmlFor="month_id_selector_board" className="block text-sm font-medium">Month ID:</label>
-          <input
+          <Input
             id="month_id_selector_board"
             type="number"
             value={currentMonthId}
             onChange={(e) => setCurrentMonthId(parseInt(e.target.value, 10) || 1)}
-            className={`${inputClasses} w-24 !text-black`}
+            className="w-24 !text-black text-sm"
             min="1"
           />
         </div>
         <div>
-          <button
+          <Button
             onClick={handleFinalizeMonth}
             disabled={isFinalizing || isLoading || boardLines.length === 0}
-            className={`${buttonClasses} bg-green-600 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed`}
+            className="text-sm bg-green-600 hover:bg-green-700" 
+            // disabled:bg-gray-500 disabled:cursor-not-allowed is handled by disabledClasses in Button
           >
             {isFinalizing ? 'Finalizing...' : 'Finalize Current Month'}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
-      {error && (
-        <div className="my-4 p-3 bg-red-800 border border-red-700 text-white rounded text-center">
-          <p>Error: {error}</p>
-        </div>
-      )}
-      
-      {finalizeMessage && (
-        <div className={`my-4 p-3 rounded text-center ${error ? 'bg-red-800 border-red-700' : 'bg-green-800 border-green-700'} text-white`}>
-          <p>{finalizeMessage}</p>
-        </div>
-      )}
+      <MessageDisplay message={error} type="error" className="my-4 text-center" />
+      <MessageDisplay message={finalizeMessage} type={error ? 'error' : 'success'} className="my-4 text-center" />
 
-      {isLoading && <div className="text-center py-4">Loading board data...</div>}
+      {isLoading && <LoadingSpinner text="Loading board data..." />}
 
       {!isLoading && !error && boardLines.length === 0 && (
-        <div className={`${cardClasses} text-center`}>
+        <Card className="text-center">
           <p className={textMutedClasses}>No budget lines found for Month ID: {currentMonthId}.</p>
           <p className={textMutedClasses}>You can add budget lines in the 'Manage' page for this month if it's not finalized.</p>
-        </div>
+        </Card>
       )}
 
       {!isLoading && boardLines.length > 0 && (
@@ -204,21 +197,18 @@ export default function BoardPage() {
               {boardLines.map(line => (
                 <tr key={line.id} className={`${getRowColor(line)} transition-colors duration-150`}>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className={`inline-block w-4 h-4 rounded mr-2 ${line.category_color || 'bg-gray-500'}`}></span>
-                      {line.category_name}
-                    </div>
+                    <CategoryBadge category={{ name: line.category_name, color: line.category_color || 'bg-gray-500' }} />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{line.label}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-right">{Number(line.expected).toFixed(0)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <input
+                    <Input
                       type="number"
                       defaultValue={Number(line.actual_amount) || 0}
                       onBlur={(e: ChangeEvent<HTMLInputElement>) => 
                         handleActualAmountChange(line.id, line.actual_id, e.target.value)
                       }
-                      className={`${inputClasses} !text-black w-full`} // Ensure text is visible, take full cell width
+                      className="!text-black w-full text-sm" // Ensure text is visible, take full cell width
                       placeholder="0"
                       min="0"
                       step="1"
