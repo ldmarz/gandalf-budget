@@ -256,12 +256,12 @@ Beyond the core principles above, the following practices are essential for a hi
 - [x] Frontend: `Board.tsx` - "Finalize Month" button and UI feedback. Redirect to new month on success.
 
 ## Milestone 5: Dashboard & Reporting
-- [ ] Backend: Define structure for dashboard aggregate payload.
-- [ ] Backend: `GET /api/v1/dashboard?month_id=:monthId` endpoint - Aggregate payload for the dashboard.
-- [ ] Frontend: `Dashboard.tsx` - Display aggregated dashboard data.
-- [ ] Backend: `GET /api/v1/reports/annual?year=YYYY` endpoint - List `annual_snaps` metadata for a given year.
-- [ ] Backend: `GET /api/v1/reports/snapshots/:snapId` endpoint - Return stored dashboard JSON from `annual_snaps` table.
-- [ ] Frontend: `Report.tsx` - UI to choose year, list snapshots, and view a read-only render of a selected snapshot.
+- [x] Backend: Define structure for dashboard aggregate payload.
+- [x] Backend: `GET /api/v1/dashboard?month_id=:monthId` endpoint - Aggregate payload for the dashboard.
+- [x] Frontend: `Dashboard.tsx` - Display aggregated dashboard data.
+- [x] Backend: `GET /api/v1/reports/annual?year=YYYY` endpoint - List `annual_snaps` metadata for a given year.
+- [x] Backend: `GET /api/v1/reports/snapshots/:snapId` endpoint - Return stored dashboard JSON from `annual_snaps` table.
+- [x] Frontend: `Report.tsx` - UI to choose year, list snapshots, and view a read-only render of a selected snapshot.
 
 ## Milestone 6: Backup & Miscellaneous
 - [ ] Backend: `GET /api/v1/export/json` endpoint - JSON backup download (pretty-printed gzip).

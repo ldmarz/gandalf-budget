@@ -23,6 +23,17 @@ func NewRouter(staticFS fs.FS, db *sqlx.DB) *http.ServeMux {
 		io.WriteString(w, `{"status": "ok"}`)
 		log.Println("HIT: /api/v1/health")
 	})
+
+	// Handler for /api/v1/dashboard
+	mux.HandleFunc("/api/v1/dashboard", GetDashboardData(appStore))
+
+	// Handler for /api/v1/reports/annual
+	mux.HandleFunc("/api/v1/reports/annual", GetAnnualReport(appStore))
+
+	// Handler for /api/v1/reports/snapshots/{snapId}
+	// Since http.ServeMux doesn't support path parameters directly,
+	// we register a prefix and the handler will parse the ID.
+	mux.HandleFunc("/api/v1/reports/snapshots/", GetSnapshotDetail(appStore))
 	
 	// Handler for /api/v1/categories (collections)
 	mux.HandleFunc("/api/v1/categories", func(w http.ResponseWriter, r *http.Request) {
@@ -120,9 +131,14 @@ func NewRouter(staticFS fs.FS, db *sqlx.DB) *http.ServeMux {
 		// ... (static file serving logic as before)
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			// This is a fallback for API routes not caught by more specific handlers.
-			log.Printf("Unknown or improperly routed API path received by root fallback: %s", r.URL.Path)
-			http.NotFound(w, r)
-			return
+			// Ensure all specific API routes are checked before this fallback.
+			if !isKnownAPIPath(r.URL.Path) {
+				log.Printf("Unknown or improperly routed API path received by root fallback: %s", r.URL.Path)
+				http.NotFound(w, r)
+				return
+			}
+			// If it IS a handled API path, it should have been handled by its specific handler.
+			// If it reaches here, it means the handler wasn't matched, which is an issue.
 		}
 		p := path.Clean(r.URL.Path)
 		if p == "/" || p == "/index.html" {
@@ -148,9 +164,35 @@ func serveIndexHTML(w http.ResponseWriter, r *http.Request, staticFS fs.FS) {
 	f, err := staticFS.Open("index.html")
 	if err != nil { http.Error(w, "index.html not found", http.StatusInternalServerError); return }
 	defer f.Close()
-	fi, err_stat := f.Stat(); 
+	fi, err_stat := f.Stat();
 	if err_stat != nil { http.Error(w, "stat failed for index.html", http.StatusInternalServerError); return }
 	rs, ok := f.(io.ReadSeeker);
 	if !ok { http.Error(w, "seek failed for index.html", http.StatusInternalServerError); return }
 	http.ServeContent(w, r, "index.html", fi.ModTime(), rs)
+}
+
+// isKnownAPIPath checks if the given path is one of the registered API paths or prefixes.
+// This is used to provide a more accurate "Not Found" for unhandled API paths.
+func isKnownAPIPath(path string) bool {
+	knownAPIPrefixes := []string{
+		"/api/v1/health",
+		"/api/v1/dashboard",
+		"/api/v1/reports/annual",
+		"/api/v1/reports/snapshots/", // Note: This is a prefix
+		"/api/v1/categories",        // Handles /api/v1/categories and /api/v1/categories/
+		"/api/v1/budget-lines",      // Handles /api/v1/budget-lines and /api/v1/budget-lines/
+		"/api/v1/actual-lines/",     // Note: This is a prefix
+		"/api/v1/months/",           // Note: This is a prefix
+	}
+	for _, prefix := range knownAPIPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			// Additional check for paths that should be exact matches but are also prefixes
+			if (prefix == "/api/v1/categories" && path != "/api/v1/categories" && !strings.HasPrefix(path, "/api/v1/categories/")) ||
+			   (prefix == "/api/v1/budget-lines" && path != "/api/v1/budget-lines" && !strings.HasPrefix(path, "/api/v1/budget-lines/")) {
+				continue // This allows /api/v1/categories/ to be handled by its specific prefix handler
+			}
+			return true
+		}
+	}
+	return false
 }
