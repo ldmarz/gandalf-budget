@@ -9,18 +9,17 @@ import (
 	"strings" // For TrimPrefix
 
 	"gandalf-budget/internal/store"
-	"github.com/jmoiron/sqlx"
 )
 
 // HandleGetCategories ... (as before)
-func HandleGetCategories(db *sqlx.DB) http.HandlerFunc {
+func HandleGetCategories(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// ... (implementation as before) ...
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		categories, err := store.GetAllCategories(db)
+		categories, err := storage.GetAllCategories()
 		if err != nil {
 			log.Printf("Error in HandleGetCategories calling store.GetAllCategories: %v", err)
 			http.Error(w, "Failed to retrieve categories", http.StatusInternalServerError)
@@ -32,7 +31,7 @@ func HandleGetCategories(db *sqlx.DB) http.HandlerFunc {
 }
 
 // HandleCreateCategory ... (as before)
-func HandleCreateCategory(db *sqlx.DB) http.HandlerFunc {
+func HandleCreateCategory(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// ... (implementation as before) ...
 		if r.Method != http.MethodPost {
@@ -49,7 +48,7 @@ func HandleCreateCategory(db *sqlx.DB) http.HandlerFunc {
 			http.Error(w, "Category name and color are required", http.StatusBadRequest)
 			return
 		}
-		err := store.CreateCategory(db, &newCategory)
+		err := storage.CreateCategory(&newCategory)
 		if err != nil {
 			http.Error(w, "Failed to create category", http.StatusInternalServerError)
 			return
@@ -61,7 +60,7 @@ func HandleCreateCategory(db *sqlx.DB) http.HandlerFunc {
 }
 
 // HandleUpdateCategory handles requests to update an existing category.
-func HandleUpdateCategory(db *sqlx.DB) http.HandlerFunc {
+func HandleUpdateCategory(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -71,7 +70,7 @@ func HandleUpdateCategory(db *sqlx.DB) http.HandlerFunc {
 		// Extract ID from path: /api/v1/categories/:id
 		pathParts := strings.Split(strings.TrimSuffix(r.URL.Path, "/"), "/")
 		idStr := pathParts[len(pathParts)-1]
-		
+
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
 			log.Printf("Error parsing category ID from path '%s': %v", idStr, err)
@@ -87,14 +86,14 @@ func HandleUpdateCategory(db *sqlx.DB) http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		categoryToUpdate.ID = id 
+		categoryToUpdate.ID = id
 
 		if categoryToUpdate.Name == "" || categoryToUpdate.Color == "" {
 			http.Error(w, "Category name and color are required for update", http.StatusBadRequest)
 			return
 		}
 
-		err = store.UpdateCategory(db, &categoryToUpdate)
+		err = storage.UpdateCategory(&categoryToUpdate)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				http.Error(w, "Category not found or no changes needed", http.StatusNotFound)
@@ -105,7 +104,7 @@ func HandleUpdateCategory(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		updatedCategory, err := store.GetCategoryByID(db, id) 
+		updatedCategory, err := storage.GetCategoryByID(id)
 		if err != nil || updatedCategory == nil {
 			log.Printf("Error fetching updated category ID %d after update: %v", id, err)
 			http.Error(w, "Failed to retrieve category after update", http.StatusInternalServerError)
@@ -121,7 +120,7 @@ func HandleUpdateCategory(db *sqlx.DB) http.HandlerFunc {
 }
 
 // HandleDeleteCategory handles requests to delete an existing category.
-func HandleDeleteCategory(db *sqlx.DB) http.HandlerFunc {
+func HandleDeleteCategory(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -130,7 +129,7 @@ func HandleDeleteCategory(db *sqlx.DB) http.HandlerFunc {
 
 		pathParts := strings.Split(strings.TrimSuffix(r.URL.Path, "/"), "/")
 		idStr := pathParts[len(pathParts)-1]
-		
+
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
 			log.Printf("Error parsing category ID from path '%s' for delete: %v", idStr, err)
@@ -138,7 +137,7 @@ func HandleDeleteCategory(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		err = store.DeleteCategory(db, id)
+		err = storage.DeleteCategory(id)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				http.Error(w, "Category not found", http.StatusNotFound)

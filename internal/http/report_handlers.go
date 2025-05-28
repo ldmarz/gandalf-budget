@@ -10,7 +10,7 @@ import (
 	"strings" // Added
 	"time"
 
-	"github.com/anaxita/logit/internal/store"
+	"gandalf-budget/internal/store"
 )
 
 // GetAnnualReport handles requests for annual report data.
@@ -49,7 +49,7 @@ func GetAnnualReport(s store.Store) http.HandlerFunc {
 		if snapshotsMeta == nil {
 			snapshotsMeta = []store.AnnualSnapMeta{}
 		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(snapshotsMeta); err != nil {
 			// Log this error as well

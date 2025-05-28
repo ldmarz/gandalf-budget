@@ -40,7 +40,7 @@ func GetBoardDataHandler(s store.Store) http.HandlerFunc {
 		}
 
 		if boardData == nil {
-		    boardData = []store.BudgetLine{} // Return empty array instead of null
+			boardData = &store.BoardDataPayload{}
 		}
 
 		w.Header().Set("Content-Type", "application/json")

@@ -2,13 +2,14 @@ package store
 
 import (
 	"fmt"
+	"math"
 )
 
 // CreateBudgetLine inserts a new BudgetLine into the budget_lines table
 // and creates an associated ActualLine with an actual amount of 0.
 // It returns the ID of the newly created BudgetLine.
 func (s *sqlStore) CreateBudgetLine(b *BudgetLine) (int64, error) {
-	tx, err := s.db.Beginx()
+	tx, err := s.DB.Beginx()
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -65,7 +66,7 @@ func (s *sqlStore) GetBudgetLinesByMonthID(monthID int) ([]BudgetLine, error) {
 		LEFT JOIN actual_lines al ON bl.id = al.budget_line_id
 		WHERE bl.month_id = $1
 		ORDER BY bl.id`
-	err := s.db.Select(&budgetLines, query, monthID)
+	err := s.DB.Select(&budgetLines, query, monthID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get budget lines by month ID %d: %w", monthID, err)
 	}
@@ -77,7 +78,7 @@ func (s *sqlStore) GetBudgetLinesByMonthID(monthID int) ([]BudgetLine, error) {
 
 // UpdateBudgetLine updates the label and expected amount of an existing BudgetLine.
 func (s *sqlStore) UpdateBudgetLine(b *BudgetLine) error {
-	_, err := s.db.NamedExec(`
+	_, err := s.DB.NamedExec(`
 		UPDATE budget_lines
 		SET label = :label, expected = :expected
 		WHERE id = :id`, b)
@@ -85,9 +86,7 @@ func (s *sqlStore) UpdateBudgetLine(b *BudgetLine) error {
 		return fmt.Errorf("failed to update budget line with ID %d: %w", b.ID, err)
 	}
 	return nil
-	"fmt"
-	"math" // Added for rounding
-)
+}
 
 // UpdateActualLine updates the actual amount of an existing ActualLine.
 // It also validates that the amount is non-negative and rounds it to 2 decimal places.
@@ -97,7 +96,7 @@ func (s *sqlStore) UpdateActualLine(a *ActualLine) error {
 	}
 	a.Actual = math.Round(a.Actual*100) / 100
 
-	_, err := s.db.NamedExec(`
+	_, err := s.DB.NamedExec(`
 		UPDATE actual_lines
 		SET actual = :actual
 		WHERE id = :id`, a)
@@ -110,7 +109,7 @@ func (s *sqlStore) UpdateActualLine(a *ActualLine) error {
 // GetActualLineByID retrieves an ActualLine by its ID.
 func (s *sqlStore) GetActualLineByID(id int64) (*ActualLine, error) {
 	var actualLine ActualLine
-	err := s.db.Get(&actualLine, "SELECT id, budget_line_id, actual FROM actual_lines WHERE id = $1", id)
+	err := s.DB.Get(&actualLine, "SELECT id, budget_line_id, actual FROM actual_lines WHERE id = $1", id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get actual line with ID %d: %w", id, err)
 	}
@@ -120,7 +119,7 @@ func (s *sqlStore) GetActualLineByID(id int64) (*ActualLine, error) {
 // GetBudgetLineByID retrieves a BudgetLine by its ID.
 func (s *sqlStore) GetBudgetLineByID(id int64) (*BudgetLine, error) {
 	var budgetLine BudgetLine
-	err := s.db.Get(&budgetLine, "SELECT id, month_id, category_id, label, expected FROM budget_lines WHERE id = $1", id)
+	err := s.DB.Get(&budgetLine, "SELECT id, month_id, category_id, label, expected FROM budget_lines WHERE id = $1", id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get budget line with ID %d: %w", id, err)
 	}
@@ -129,7 +128,7 @@ func (s *sqlStore) GetBudgetLineByID(id int64) (*BudgetLine, error) {
 
 // DeleteBudgetLine deletes a BudgetLine and its associated ActualLine.
 func (s *sqlStore) DeleteBudgetLine(id int64) error {
-	tx, err := s.db.Beginx()
+	tx, err := s.DB.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"database/sql" // For sql.ErrNoRows
 	"fmt"
 	"log"
-	"github.com/jmoiron/sqlx"
 )
 
 // Category struct (as defined in models.go)
