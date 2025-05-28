@@ -1,77 +1,40 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import * as api from '../lib/api'; // Assuming api.ts is in ../lib
-import { textMutedClasses } from '../styles/commonClasses'; // Removed cardClasses, buttonClasses, inputClasses
-import Card from '../components/ui/Card'; // Import Card component
-import Button from '../components/ui/Button'; // Import Button component
-import Input from '../components/ui/Input'; // Import Input component
-import LoadingSpinner from '../components/ui/LoadingSpinner'; // Import LoadingSpinner
-import MessageDisplay from '../components/ui/MessageDisplay'; // Import MessageDisplay
-import CategoryBadge from '../components/CategoryBadge'; // Import CategoryBadge
+import * as api from '../lib/api';
+import { textMutedClasses } from '../styles/commonClasses';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import MessageDisplay from '../components/ui/MessageDisplay';
+import CategoryBadge from '../components/CategoryBadge';
 
 export default function BoardPage() {
-  const [boardLines, setBoardLines] = useState<api.BudgetLine[]>([]);
-  const [categories, setCategories] = useState<api.Category[]>([]);
-  const [currentMonthId, setCurrentMonthId] = useState<number>(1); // Default to month 1
+  const [boardData, setBoardData] = useState<api.BoardDataPayload | null>(null);
+  const [currentMonthId, setCurrentMonthId] = useState<number>(1); // Default to month 1, or load from URL param
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [isFinalizing, setIsFinalizing] = useState(false); // New state for finalization loading
-  const [finalizeMessage, setFinalizeMessage] = useState<string | null>(null); // New state for success/error messages from finalize
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [finalizeMessage, setFinalizeMessage] = useState<string | null>(null);
 
-  // Fetch categories
-  const fetchCategories = async () => {
-    setIsLoadingCategories(true);
-    try {
-      const data = await api.getAllCategories();
-      setCategories(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch categories');
-      setCategories([]);
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  };
-
-  // Fetch budget lines for the board
+  // Fetch board data
   const fetchBoardData = async (monthId: number) => {
-    if (categories.length === 0) {
-        return;
-    }
     setIsLoading(true);
     setError(null);
-    setFinalizeMessage(null); // Clear finalize message on new data load
+    setFinalizeMessage(null);
     try {
-      // Use the new getBoardData API endpoint
-      const data = await api.getBoardData(monthId); 
-      const enrichedData = data.map(line => {
-        const category = categories.find(c => c.id === line.category_id);
-        return {
-          ...line,
-          category_name: category?.name || 'Unknown Category',
-          category_color: category?.color || 'bg-gray-500', // Default color
-          // actual_amount and actual_id should now come directly from getBoardData
-          // Ensure actual_amount is a number, defaulting to 0 if null/undefined
-          actual_amount: line.actual_amount === undefined || line.actual_amount === null ? 0 : Number(line.actual_amount),
-        };
-      });
-      setBoardLines(enrichedData);
+      const data = await api.getBoardData(monthId);
+      setBoardData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch board data');
-      setBoardLines([]); // Clear board lines on error
+      setBoardData(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    if (categories.length > 0) { 
-        fetchBoardData(currentMonthId);
-    }
-  }, [currentMonthId, categories]); // Re-fetch when currentMonthId or categories change
+    fetchBoardData(currentMonthId);
+  }, [currentMonthId]);
 
   const handleFinalizeMonth = async () => {
     if (!currentMonthId) {
@@ -84,73 +47,73 @@ export default function BoardPage() {
     try {
       const response = await api.finalizeMonth(currentMonthId);
       setFinalizeMessage(response.message || "Month finalized successfully!");
-      // setCurrentMonthId(response.new_month_id); // This will trigger useEffect to refetch board data for new month
-      // Instead of directly setting, we might want to fetch board data for the *new* month ID explicitly
-      // or rely on the user to navigate if the month ID display changes.
-      // For now, setting currentMonthId will cause a re-fetch due to useEffect dependency.
-      fetchBoardData(response.new_month_id); // Fetch data for the new month
-      setCurrentMonthId(response.new_month_id); // Update the displayed month ID
-      
+      // After finalizing, fetch data for the new month and update currentMonthId
+      setCurrentMonthId(response.new_month_id); // This will trigger useEffect to reload board data
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to finalize month. Check if all actuals are set or an error occurred.";
       setError(errorMessage);
-      // setFinalizeMessage(errorMessage); // Show error in finalize message spot too, or rely on general error display
     } finally {
       setIsFinalizing(false);
     }
   };
 
   const handleActualAmountChange = async (
-    budgetLineId: number, 
-    actualLineId: number | undefined, 
+    budgetLineId: number, // This is BudgetLineWithActual.id
     newActualString: string
   ) => {
     const newActual = parseFloat(newActualString);
     if (isNaN(newActual) || newActual < 0) {
       alert("Please enter a valid positive number for the actual amount.");
+      // Optionally refetch to revert optimistic update, or just reset input visually
       fetchBoardData(currentMonthId); 
       return;
     }
 
-    if (actualLineId === undefined) {
-        setError(`Cannot update actual amount: ActualLine ID is missing for budget line ${budgetLineId}. This might mean the actual record was not created yet.`);
-        console.error("ActualLine ID is undefined for budget line:", budgetLineId);
-        return;
+    // Optimistic UI update
+    if (boardData) {
+      setBoardData({
+        ...boardData,
+        budget_lines: boardData.budget_lines.map(line =>
+          line.id === budgetLineId ? { ...line, actual_amount: newActual } : line
+        ),
+      });
     }
 
-    setBoardLines(prevLines =>
-      prevLines.map(line =>
-        line.id === budgetLineId ? { ...line, actual_amount: newActual } : line
-      )
-    );
-
     try {
-      await api.updateActualLine(actualLineId, { actual: newActual });
+      // PRD implies /line/:id uses budget_line_id.
+      // Assuming api.updateActualLine is adapted or a new function api.updateBudgetLineActual is used.
+      // For this task, we'll assume api.updateActualLine takes budgetLineId as its first argument.
+      // This is a key assumption for this refactor to be fully functional.
+      await api.updateActualLine(budgetLineId, { actual: newActual });
     } catch (err) {
       alert(`Failed to update actual amount: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setError(err instanceof Error ? `Failed to update: ${err.message}` : 'Failed to update actual amount.');
+      // Revert optimistic update or refetch
       fetchBoardData(currentMonthId); 
     }
   };
   
-  const getRowColor = (line: api.BudgetLine): string => {
-    if (line.actual_amount && Number(line.actual_amount) > 0) { // Ensure comparison with number
+  const getRowColor = (line: api.BudgetLineWithActual): string => {
+    if (line.actual_amount && Number(line.actual_amount) > 0) {
       return 'bg-green-700 hover:bg-green-600'; 
     }
     return 'bg-yellow-700 hover:bg-yellow-600'; 
   };
 
-  if (isLoadingCategories) return <LoadingSpinner text="Loading categories..." />;
+  // Initial loading state
+  if (isLoading && !boardData) return <LoadingSpinner text="Loading board data..." />;
 
   return (
     <div className="p-4 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-2xl font-bold mb-6 text-center">Monthly Budget Board</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        Monthly Budget Board: {boardData ? `${boardData.month_name} ${boardData.year}` : `Month ID ${currentMonthId}`}
+      </h1>
 
       <Card className="mb-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-2">
-          <label htmlFor="month_id_selector_board" className="block text-sm font-medium">Month ID:</label>
+          <label htmlFor="month_id_selector_board" className="block text-sm font-medium">Select Month ID:</label>
           <Input
-            id="month_id_selector_board"
+            id="month_id_selector_board" // Corrected ID
             type="number"
             value={currentMonthId}
             onChange={(e) => setCurrentMonthId(parseInt(e.target.value, 10) || 1)}

@@ -1,71 +1,17 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { getDashboardData, DashboardPayload, CategorySummary, BudgetLineDetail } from '../lib/api'; // Ensure snake_case interfaces are exported from api.ts
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Badge } from '../components/ui/badge'; // For general purpose badges if needed
-import { CategoryBadge } from '../components/CategoryBadge'; // Assuming this component exists and works as described
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
-import { Loader2 } from 'lucide-react';
-import { formatCurrency } from '../lib/utils'; // Updated import
+import { DashboardPayload, CategorySummary, BudgetLineDetail } from '../lib/api';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Badge } from './ui/badge';
+import { CategoryBadge } from './CategoryBadge';
+import { formatCurrency } from '../lib/utils';
 
-export default function Dashboard() {
-  const [searchParams] = useSearchParams();
-  const monthId = searchParams.get('month_id');
+interface ReadOnlyDashboardViewProps {
+  data: DashboardPayload;
+}
 
-  const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!monthId) {
-      setError('Month ID is required. Please select a month.');
-      setLoading(false);
-      return;
-    }
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getDashboardData(monthId);
-        setDashboardData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-        console.error("Failed to fetch dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [monthId]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-lg">Loading dashboard...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive" className="max-w-2xl mx-auto my-4">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!dashboardData) {
-    return (
-      <div className="text-center py-10">
-        <p>No dashboard data available for the selected month.</p>
-         {!monthId && <p>Please ensure a month is selected or a `month_id` is provided in the URL.</p>}
-      </div>
-    );
+export default function ReadOnlyDashboardView({ data }: ReadOnlyDashboardViewProps) {
+  if (!data) {
+    return <p>No data provided to display.</p>;
   }
 
   const {
@@ -75,14 +21,14 @@ export default function Dashboard() {
     total_actual,
     total_difference,
     category_summaries,
-  } = dashboardData;
+  } = data;
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl font-bold">Dashboard for {month} {year}</CardTitle>
-          <CardDescription>Overview of your budget and spending for the month.</CardDescription>
+          <CardTitle className="text-3xl font-bold">Snapshot: {month} {year}</CardTitle>
+          <CardDescription>Read-only view of budget and spending for this period.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-blue-50 dark:bg-blue-900">
@@ -115,15 +61,15 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {category_summaries.length === 0 && (
+      {(!category_summaries || category_summaries.length === 0) && (
         <Card>
           <CardContent>
-            <p className="text-center py-4">No category summaries available for this month.</p>
+            <p className="text-center py-4 text-muted-foreground">No category summaries available for this snapshot.</p>
           </CardContent>
         </Card>
       )}
 
-      {category_summaries.map((summary: CategorySummary) => (
+      {category_summaries && category_summaries.map((summary: CategorySummary) => (
         <Card key={summary.category_id}>
           <CardHeader className="flex flex-row justify-between items-center">
             <div>
@@ -134,7 +80,7 @@ export default function Dashboard() {
             </div>
             <div className="text-right">
                  <p className="text-sm text-muted-foreground">Difference</p>
-                 <p className={`text-lg font-semibold ${summary.difference >=0 ? 'text-green-600' : 'text-red-600'}`}>
+                 <p className={`text-lg font-semibold ${summary.difference >=0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatCurrency(summary.difference)}
                  </p>
             </div>
@@ -151,7 +97,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {summary.budget_lines.length > 0 ? (
+            {(!summary.budget_lines || summary.budget_lines.length === 0) ? (
+              <p className="text-sm text-muted-foreground text-center py-3">No budget lines in this category for this snapshot.</p>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -174,8 +122,6 @@ export default function Dashboard() {
                   ))}
                 </TableBody>
               </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-3">No budget lines in this category.</p>
             )}
           </CardContent>
         </Card>
