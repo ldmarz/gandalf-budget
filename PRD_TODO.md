@@ -229,19 +229,19 @@ Beyond the core principles above, the following practices are essential for a hi
 - [x] Backend: Basic tests for category handlers.
 
 ## Milestone 3: Core CRUD Functionality - Budget Lines & Actuals
-- [ ] Backend: BudgetLine model (`internal/store/models.go`) - (Corresponds to `budget_lines` table)
-- [ ] Backend: ActualLine model (`internal/store/models.go`) - (Corresponds to `actual_lines` table)
-- [ ] Backend: Store functions for BudgetLine & ActualLine CRUD.
-    - [ ] `CreateBudgetLine` should auto-create a linked `ActualLine` with 0 value (Use Case 5.1.3).
-- [ ] Backend: HTTP handlers for BudgetLine & ActualLine CRUD.
+- [x] Backend: BudgetLine model (`internal/store/models.go`) - (Corresponds to `budget_lines` table)
+- [x] Backend: ActualLine model (`internal/store/models.go`) - (Corresponds to `actual_lines` table)
+- [x] Backend: Store functions for BudgetLine & ActualLine CRUD.
+    - [x] `CreateBudgetLine` should auto-create a linked `ActualLine` with 0 value (Use Case 5.1.3).
+- [x] Backend: HTTP handlers for BudgetLine & ActualLine CRUD.
     - API endpoints needed:
-        - `POST /api/v1/budget-lines` (for creating a budget line, should also create its initial actual_line)
-        - `PUT /api/v1/budget-lines/:id` (for updating a budget line's label or expected amount)
-        - `DELETE /api/v1/budget-lines/:id` (for deleting a budget line and its associated actual_line)
-        - `PUT /api/v1/actual-lines/:id` (for updating the actual amount of an actual_line - this is the `/line/:id` from PRD, but more specific) 
-        - `GET /api/v1/budget-lines?month_id=:monthId` (To get all budget lines for a month, perhaps for the Manage page or board)
-- [ ] Frontend: `Manage.tsx` - UI for adding/editing/deleting Budget Lines (associated with categories and a month).
-- [ ] Frontend: `Board.tsx` - UI for displaying budget lines and entering/updating Actual amounts (Use Case 5.2). This will use `PUT /api/v1/actual-lines/:id`.
+        - [x] `POST /api/v1/budget-lines` (for creating a budget line, should also create its initial actual_line)
+        - [x] `PUT /api/v1/budget-lines/:id` (for updating a budget line's label or expected amount)
+        - [x] `DELETE /api/v1/budget-lines/:id` (for deleting a budget line and its associated actual_line)
+        - [x] `PUT /api/v1/actual-lines/:id` (for updating the actual amount of an actual_line - this is the `/line/:id` from PRD, but more specific) 
+        - [x] `GET /api/v1/budget-lines?month_id=:monthId` (To get all budget lines for a month, perhaps for the Manage page or board)
+- [x] Frontend: `Manage.tsx` - UI for adding/editing/deleting Budget Lines (associated with categories and a month).
+- [x] Frontend: `Board.tsx` - UI for displaying budget lines and entering/updating Actual amounts (Use Case 5.2). This will use `PUT /api/v1/actual-lines/:id`.
 
 ## Milestone 4: Monthly Board & Finalization Logic
 - [ ] Backend: `GET /api/v1/board-data/:monthId` endpoint to fetch combined budget_lines and their corresponding actual_lines for a specific month.
