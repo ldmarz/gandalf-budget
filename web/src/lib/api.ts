@@ -108,3 +108,68 @@ async function testApi() {
 }
 // testApi();
 */
+
+// TypeScript types for BudgetLine and ActualLine
+export interface BudgetLine {
+  id: number;
+  month_id: number;
+  category_id: number;
+  label: string;
+  expected: number;
+  // Optional fields if your API might join them, or if you plan to merge client-side
+  category_name?: string; 
+  category_color?: string;
+  actual_amount?: number; // To store the actual amount from ActualLine
+  actual_id?: number; // ID of the associated ActualLine record
+}
+
+export interface ActualLine {
+  id: number;
+  budget_line_id: number;
+  actual: number;
+}
+
+// API functions for Budget Lines
+export async function createBudgetLine(data: { month_id: number; category_id: number; label: string; expected: number }): Promise<BudgetLine> {
+  return post<BudgetLine, typeof data>('/budget-lines', data);
+}
+
+export async function getBudgetLinesByMonth(monthId: number): Promise<BudgetLine[]> {
+  return get<BudgetLine[]>(`/budget-lines?month_id=${monthId}`);
+}
+
+export async function updateBudgetLine(id: number, data: { label?: string; expected?: number }): Promise<BudgetLine> {
+  return put<BudgetLine, typeof data>(`/budget-lines/${id}`, data);
+}
+
+export async function deleteBudgetLine(id: number): Promise<void> {
+  return del<void>(`/budget-lines/${id}`); // Expects 204 No Content, handleResponse handles this
+}
+
+// API function for Actual Lines
+export async function updateActualLine(id: number, data: { actual: number }): Promise<ActualLine> {
+  return put<ActualLine, typeof data>(`/actual-lines/${id}`, data);
+}
+
+// --- Existing Category types and functions for context ---
+export interface Category {
+  id: number;
+  name: string;
+  color: string;
+}
+
+export async function getAllCategories(): Promise<Category[]> {
+  return get<Category[]>('/categories');
+}
+
+export async function createCategory(data: { name: string; color: string }): Promise<Category> {
+  return post<Category, typeof data>('/categories', data);
+}
+
+export async function updateCategory(id: number, data: { name?: string; color?: string }): Promise<Category> {
+  return put<Category, typeof data>(`/categories/${id}`, data);
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  return del<void>(`/categories/${id}`);
+}
