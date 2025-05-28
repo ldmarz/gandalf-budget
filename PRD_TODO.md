@@ -244,16 +244,16 @@ Beyond the core principles above, the following practices are essential for a hi
 - [ ] Frontend: `Board.tsx` - UI for displaying budget lines and entering/updating Actual amounts (Use Case 5.2). This will use `PUT /api/v1/actual-lines/:id`.
 
 ## Milestone 4: Monthly Board & Finalization Logic
-- [ ] Backend: `GET /api/v1/board-data/:monthId` endpoint to fetch combined budget_lines and their corresponding actual_lines for a specific month.
+- [x] Backend: `GET /api/v1/board-data/:monthId` endpoint to fetch combined budget_lines and their corresponding actual_lines for a specific month.
     - This will likely involve a JOIN query.
-- [ ] Frontend: `Board.tsx` - Fetch and display data from `/api/v1/board-data/:monthId`. Allow navigation to different months.
-- [ ] Backend: `PUT /api/v1/months/:monthId/finalize` endpoint.
-    - [ ] Logic to check if any budget lines for the month have an actual_line with amount 0 (or however "yellow rows" are defined). Prevent finalization if so.
-    - [ ] Transaction:
-        - [ ] Create and save dashboard payload into `annual_snaps` (requires dashboard data structure definition).
-        - [ ] Mark current month `finalized=1` in `months` table.
-        - [ ] Clone `budget_lines` (and their initial `actual_lines` at 0) into a new `months` record for the next calendar month.
-- [ ] Frontend: `Board.tsx` - "Finalize Month" button and UI feedback. Redirect to new month on success.
+- [x] Frontend: `Board.tsx` - Fetch and display data from `/api/v1/board-data/:monthId`. Allow navigation to different months.
+- [x] Backend: `PUT /api/v1/months/:monthId/finalize` endpoint.
+    - [x] Logic to check if any budget lines for the month have an actual_line with amount 0 (or however "yellow rows" are defined). Prevent finalization if so.
+    - [x] Transaction:
+        - [x] Create and save dashboard payload into `annual_snaps` (requires dashboard data structure definition).
+        - [x] Mark current month `finalized=1` in `months` table.
+        - [x] Clone `budget_lines` (and their initial `actual_lines` at 0) into a new `months` record for the next calendar month.
+- [x] Frontend: `Board.tsx` - "Finalize Month" button and UI feedback. Redirect to new month on success.
 
 ## Milestone 5: Dashboard & Reporting
 - [ ] Backend: Define structure for dashboard aggregate payload.

@@ -40,6 +40,13 @@ type Store interface {
 	UpdateActualLine(a *ActualLine) error
 	GetActualLineByID(id int64) (*ActualLine, error)
 	GetBudgetLineByID(id int64) (*BudgetLine, error)
+
+	// Board data methods
+	GetBoardData(monthID int) ([]BudgetLine, error)
+
+	// Month finalization methods
+	CanFinalizeMonth(monthID int) (bool, string, error) // Returns can_finalize, reason, error
+	FinalizeMonth(monthID int, snapJSON string) (int64, error) // Returns new_month_id, error
 }
 
 // sqlStore provides a concrete implementation of the Store interface

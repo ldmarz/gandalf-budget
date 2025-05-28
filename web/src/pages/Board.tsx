@@ -14,6 +14,8 @@ export default function BoardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [isFinalizing, setIsFinalizing] = useState(false); // New state for finalization loading
+  const [finalizeMessage, setFinalizeMessage] = useState<string | null>(null); // New state for success/error messages from finalize
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -31,28 +33,30 @@ export default function BoardPage() {
 
   // Fetch budget lines for the board
   const fetchBoardData = async (monthId: number) => {
-    if (categories.length === 0) { // Ensure categories are loaded first
-        // console.log("Categories not loaded yet, deferring board data fetch");
+    if (categories.length === 0) {
         return;
     }
     setIsLoading(true);
     setError(null);
+    setFinalizeMessage(null); // Clear finalize message on new data load
     try {
-      const data = await api.getBudgetLinesByMonth(monthId);
+      // Use the new getBoardData API endpoint
+      const data = await api.getBoardData(monthId); 
       const enrichedData = data.map(line => {
         const category = categories.find(c => c.id === line.category_id);
         return {
           ...line,
-          category_name: category?.name || 'Unknown',
-          category_color: category?.color || 'bg-gray-500',
-          actual_amount: line.actual_amount || 0, // Ensure actual_amount is initialized
-          actual_id: line.actual_id // Will be undefined if not provided by API
+          category_name: category?.name || 'Unknown Category',
+          category_color: category?.color || 'bg-gray-500', // Default color
+          // actual_amount and actual_id should now come directly from getBoardData
+          // Ensure actual_amount is a number, defaulting to 0 if null/undefined
+          actual_amount: line.actual_amount === undefined || line.actual_amount === null ? 0 : Number(line.actual_amount),
         };
       });
       setBoardLines(enrichedData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch board data');
-      setBoardLines([]);
+      setBoardLines([]); // Clear board lines on error
     } finally {
       setIsLoading(false);
     }
@@ -63,33 +67,56 @@ export default function BoardPage() {
   }, []);
 
   useEffect(() => {
-    if (categories.length > 0) { // Only fetch board data if categories are available
+    if (categories.length > 0) { 
         fetchBoardData(currentMonthId);
     }
-  }, [currentMonthId, categories]);
+  }, [currentMonthId, categories]); // Re-fetch when currentMonthId or categories change
 
+  const handleFinalizeMonth = async () => {
+    if (!currentMonthId) {
+      setError("Month ID is not set.");
+      return;
+    }
+    setIsFinalizing(true);
+    setError(null);
+    setFinalizeMessage(null);
+    try {
+      const response = await api.finalizeMonth(currentMonthId);
+      setFinalizeMessage(response.message || "Month finalized successfully!");
+      // setCurrentMonthId(response.new_month_id); // This will trigger useEffect to refetch board data for new month
+      // Instead of directly setting, we might want to fetch board data for the *new* month ID explicitly
+      // or rely on the user to navigate if the month ID display changes.
+      // For now, setting currentMonthId will cause a re-fetch due to useEffect dependency.
+      fetchBoardData(response.new_month_id); // Fetch data for the new month
+      setCurrentMonthId(response.new_month_id); // Update the displayed month ID
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to finalize month. Check if all actuals are set or an error occurred.";
+      setError(errorMessage);
+      // setFinalizeMessage(errorMessage); // Show error in finalize message spot too, or rely on general error display
+    } finally {
+      setIsFinalizing(false);
+    }
+  };
 
   const handleActualAmountChange = async (
-    budgetLineId: number, // Keep for finding the line in state
+    budgetLineId: number, 
     actualLineId: number | undefined, 
     newActualString: string
   ) => {
     const newActual = parseFloat(newActualString);
     if (isNaN(newActual) || newActual < 0) {
       alert("Please enter a valid positive number for the actual amount.");
-      // Optionally, revert the input to its previous state if needed
-      fetchBoardData(currentMonthId); // Or update specific line from a backup
+      fetchBoardData(currentMonthId); 
       return;
     }
 
     if (actualLineId === undefined) {
-        setError(`Cannot update actual amount: ActualLine ID is missing for budget line ${budgetLineId}.`);
-        // This indicates an issue with data from the backend (actual_id not provided)
+        setError(`Cannot update actual amount: ActualLine ID is missing for budget line ${budgetLineId}. This might mean the actual record was not created yet.`);
         console.error("ActualLine ID is undefined for budget line:", budgetLineId);
         return;
     }
 
-    // Optimistically update UI - or you can wait for API response
     setBoardLines(prevLines =>
       prevLines.map(line =>
         line.id === budgetLineId ? { ...line, actual_amount: newActual } : line
@@ -98,23 +125,19 @@ export default function BoardPage() {
 
     try {
       await api.updateActualLine(actualLineId, { actual: newActual });
-      // Optionally re-fetch to confirm or if backend does more logic
-      // await fetchBoardData(currentMonthId); 
     } catch (err) {
       alert(`Failed to update actual amount: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      // Revert optimistic update on error
       setError(err instanceof Error ? `Failed to update: ${err.message}` : 'Failed to update actual amount.');
-      fetchBoardData(currentMonthId); // Re-fetch to get the source of truth
+      fetchBoardData(currentMonthId); 
     }
   };
   
   const getRowColor = (line: api.BudgetLine): string => {
-    if (line.actual_amount && line.actual_amount > 0) {
-      return 'bg-green-700 hover:bg-green-600'; // Darker green for dark theme
+    if (line.actual_amount && Number(line.actual_amount) > 0) { // Ensure comparison with number
+      return 'bg-green-700 hover:bg-green-600'; 
     }
-    return 'bg-yellow-700 hover:bg-yellow-600'; // Darker yellow for dark theme
+    return 'bg-yellow-700 hover:bg-yellow-600'; 
   };
-
 
   if (isLoadingCategories) return <div className="p-4 text-white">Loading categories...</div>;
 
@@ -122,8 +145,7 @@ export default function BoardPage() {
     <div className="p-4 bg-gray-900 min-h-screen text-white">
       <h1 className="text-2xl font-bold mb-6 text-center">Monthly Budget Board</h1>
 
-      <div className={`${cardClasses} mb-6`}>
-        <h2 className="text-xl font-semibold mb-3">Select Month</h2>
+      <div className={`${cardClasses} mb-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0`}>
         <div className="flex items-center space-x-2">
           <label htmlFor="month_id_selector_board" className="block text-sm font-medium">Month ID:</label>
           <input
@@ -131,10 +153,18 @@ export default function BoardPage() {
             type="number"
             value={currentMonthId}
             onChange={(e) => setCurrentMonthId(parseInt(e.target.value, 10) || 1)}
-            className={`${inputClasses} w-24 !text-black`} // Ensure text is visible
+            className={`${inputClasses} w-24 !text-black`}
             min="1"
           />
-           {/* Removed the "Load Budget Lines" button, will auto-load on month change */}
+        </div>
+        <div>
+          <button
+            onClick={handleFinalizeMonth}
+            disabled={isFinalizing || isLoading || boardLines.length === 0}
+            className={`${buttonClasses} bg-green-600 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed`}
+          >
+            {isFinalizing ? 'Finalizing...' : 'Finalize Current Month'}
+          </button>
         </div>
       </div>
 
@@ -143,13 +173,19 @@ export default function BoardPage() {
           <p>Error: {error}</p>
         </div>
       )}
+      
+      {finalizeMessage && (
+        <div className={`my-4 p-3 rounded text-center ${error ? 'bg-red-800 border-red-700' : 'bg-green-800 border-green-700'} text-white`}>
+          <p>{finalizeMessage}</p>
+        </div>
+      )}
 
       {isLoading && <div className="text-center py-4">Loading board data...</div>}
 
       {!isLoading && !error && boardLines.length === 0 && (
         <div className={`${cardClasses} text-center`}>
           <p className={textMutedClasses}>No budget lines found for Month ID: {currentMonthId}.</p>
-          <p className={textMutedClasses}>You can add budget lines in the 'Manage' page.</p>
+          <p className={textMutedClasses}>You can add budget lines in the 'Manage' page for this month if it's not finalized.</p>
         </div>
       )}
 
@@ -174,18 +210,18 @@ export default function BoardPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{line.label}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right">{line.expected.toFixed(0)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-right">{Number(line.expected).toFixed(0)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <input
                       type="number"
-                      defaultValue={line.actual_amount || 0} // Use defaultValue for onBlur updates
+                      defaultValue={Number(line.actual_amount) || 0}
                       onBlur={(e: ChangeEvent<HTMLInputElement>) => 
                         handleActualAmountChange(line.id, line.actual_id, e.target.value)
                       }
-                      className={`${inputClasses} !text-black`} // Ensure text is visible
+                      className={`${inputClasses} !text-black w-full`} // Ensure text is visible, take full cell width
                       placeholder="0"
                       min="0"
-                      step="1" // Assuming CLP doesn't typically use decimals
+                      step="1"
                     />
                   </td>
                 </tr>

@@ -97,6 +97,23 @@ func NewRouter(staticFS fs.FS, db *sqlx.DB) *http.ServeMux {
 		}
 	})
 
+	// Handler for /api/v1/months/:monthId/finalize
+	mux.HandleFunc("/api/v1/months/", func(w http.ResponseWriter, r *http.Request) {
+		// Path: /api/v1/months/{monthId}/finalize
+		// The FinalizeMonthHandler will parse the monthId and check for "finalize"
+		if r.Method == http.MethodPut { // Check method here for clarity
+			 // Further path validation like ensuring 'finalize' exists can be in handler or here
+			pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/months/"), "/")
+			if len(pathParts) >= 2 && pathParts[1] == "finalize" {
+				FinalizeMonthHandler(appStore)(w, r)
+			} else {
+				http.NotFound(w,r) // Or a more specific error
+			}
+		} else {
+			http.Error(w, "Method not allowed for /api/v1/months/", http.StatusMethodNotAllowed)
+		}
+	})
+
 	// Static file serving (same as before)
 	fileServer := http.FileServer(http.FS(staticFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
