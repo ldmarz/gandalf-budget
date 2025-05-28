@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -45,7 +46,7 @@ type Store interface {
 	GetBoardData(monthID int) (*BoardDataPayload, error) // Signature updated
 
 	// Month finalization methods
-	CanFinalizeMonth(monthID int) (bool, string, error) // Returns can_finalize, reason, error
+	CanFinalizeMonth(monthID int) (bool, string, error)        // Returns can_finalize, reason, error
 	FinalizeMonth(monthID int, snapJSON string) (int64, error) // Returns new_month_id, error
 
 	// Report methods
@@ -56,7 +57,12 @@ type Store interface {
 // sqlStore provides a concrete implementation of the Store interface
 // using an sqlx.DB database connection.
 type sqlStore struct {
-	*sqlx.DB
+	DB *sqlx.DB
+}
+
+func (s *sqlStore) GetAnnualSnapshotsMetadataByYear(year int) ([]AnnualSnapMeta, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 // NewSQLStore creates a new sqlStore with the given database connection.
@@ -114,18 +120,4 @@ func (s *sqlStore) GetAnnualSnapshotJSONByID(snapID int64) (string, error) {
 		return "", fmt.Errorf("error fetching annual snapshot JSON for ID %d: %w", snapID, err)
 	}
 	return snapJSON, nil
-}
-
-// GetAllCategories retrieves all categories from the database, ordered by name.
-func (s *sqlStore) GetAllCategories() ([]Category, error) {
-	var categories []Category
-	query := `SELECT id, name, color FROM categories ORDER BY name;`
-	err := s.DB.Select(&categories, query)
-	if err != nil {
-		// sql.ErrNoRows is not typically returned by Select for an empty result set,
-		// it usually returns an empty slice and nil error.
-		// However, if it were, returning an empty slice is appropriate.
-		return nil, fmt.Errorf("error fetching all categories: %w", err)
-	}
-	return categories, nil
 }

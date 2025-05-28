@@ -1,12 +1,14 @@
 package http
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
-	"github.com/anaxita/logit/internal/app"
-	"github.com/anaxita/logit/internal/store"
+	"gandalf-budget/internal/app"
+	"gandalf-budget/internal/store"
 )
 
 // GetDashboardData handles the request for dashboard data.
@@ -41,7 +43,6 @@ func GetDashboardData(s store.Store) http.HandlerFunc {
 			return
 		}
 
-
 		// Fetch all categories to ensure every category is listed in the dashboard,
 		// even if it has no budget lines for the selected month.
 		allCategories, err := s.GetAllCategories() // Changed from GetCategories
@@ -51,9 +52,9 @@ func GetDashboardData(s store.Store) http.HandlerFunc {
 		}
 
 		payload := app.DashboardPayload{
-			MonthID:   int(boardData.MonthID), // Convert int64 to int
-			Year:      boardData.Year,
-			Month:     boardData.MonthName, // Directly use MonthName
+			MonthID: int(boardData.MonthID), // Convert int64 to int
+			Year:    boardData.Year,
+			Month:   boardData.MonthName, // Directly use MonthName
 			// Totals and summaries will be calculated below
 		}
 
@@ -76,7 +77,7 @@ func GetDashboardData(s store.Store) http.HandlerFunc {
 			// `store.Category` has `ID int64`.
 			// `store.BudgetLineWithActual` has `CategoryID int64`.
 			// This requires careful casting.
-			
+
 			// Correct approach: categorySummariesMap key should be int64 (category ID type from store.BudgetLineWithActual)
 			// app.CategorySummary.CategoryID should be int64.
 			// For now, I'll assume app.CategorySummary.CategoryID is int as per current app struct.
@@ -110,7 +111,7 @@ func GetDashboardData(s store.Store) http.HandlerFunc {
 				}
 				categorySummariesMap[line.CategoryID] = summary
 			}
-			
+
 			summary.TotalExpected += line.ExpectedAmount
 			summary.TotalActual += line.ActualAmount
 
@@ -122,7 +123,7 @@ func GetDashboardData(s store.Store) http.HandlerFunc {
 				Difference:     line.ExpectedAmount - line.ActualAmount,
 			})
 		}
-		
+
 		payload.CategorySummaries = []app.CategorySummary{} // Initialize
 		for _, summary := range categorySummariesMap {
 			summary.Difference = summary.TotalExpected - summary.TotalActual
