@@ -1,18 +1,19 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import { get, post, put, del } from '../lib/api'; // Adjust path as necessary
+import { textMutedClasses } from '../styles/commonClasses'; // Removed inputClasses, buttonClasses, destructiveButtonClasses
+import Card from '../components/ui/Card'; // Import Card component
+import Button from '../components/ui/Button'; // Import Button component
+import Input from '../components/ui/Input'; // Import Input component
+import Select from '../components/ui/Select'; // Import Select component
+import LoadingSpinner from '../components/ui/LoadingSpinner'; // Import LoadingSpinner
+import MessageDisplay from '../components/ui/MessageDisplay'; // Import MessageDisplay
+import CategoryBadge from '../components/CategoryBadge'; // Import CategoryBadge
 
 interface Category {
   id: number;
   name: string;
   color: string; // Tailwind color class e.g., 'bg-red-500'
 }
-
-// Basic Tailwind classes - can be expanded
-const inputClasses = "border border-gray-300 rounded px-2 py-1 text-black"; // Added text-black
-const buttonClasses = "bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded";
-const destructiveButtonClasses = "bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded";
-const cardClasses = "bg-gray-800 p-4 rounded shadow-md mb-4"; // Changed to dark theme card
-const textMutedClasses = "text-gray-400"; // For placeholder text or muted info
 
 export default function ManagePage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -129,7 +130,7 @@ export default function ManagePage() {
     setFormName('');
     setFormColor('');
   };
-  
+
   // --- Budget Line Functions ---
   const fetchBudgetLines = async (monthId: number) => {
     setIsLoadingBL(true);
@@ -229,65 +230,62 @@ export default function ManagePage() {
   };
 
 
-  if (isLoading) return <div className="p-4 text-white">Loading page...</div>;
+  if (isLoading) return <LoadingSpinner text="Loading page..." />;
 
   return (
     <div className="p-4 bg-gray-900 min-h-screen text-white">
       <h1 className="text-2xl font-bold mb-6 text-center">Manage Data</h1>
 
       {/* Month Selector (Simplified) */}
-      <div className={`${cardClasses} mb-6`}>
+      <Card className="mb-6">
         <h2 className="text-xl font-semibold mb-3">Select Month</h2>
         <div className="flex items-center space-x-2">
           <label htmlFor="month_id_selector" className="block text-sm font-medium">Month ID:</label>
-          <input
+          <Input
             id="month_id_selector"
             type="number"
             value={currentMonthId}
             onChange={(e) => setCurrentMonthId(parseInt(e.target.value, 10) || 1)}
-            className={`${inputClasses} w-24`}
+            className="w-24"
             min="1"
           />
-          <button onClick={() => fetchBudgetLines(currentMonthId)} className={buttonClasses}>Load Budget Lines</button>
+          <Button onClick={() => fetchBudgetLines(currentMonthId)}>Load Budget Lines</Button>
         </div>
         <p className={textMutedClasses}>Note: This is a simplified month selector. Use a valid Month ID from your database.</p>
-      </div>
+      </Card>
       
       {/* Categories Section */}
       <section id="categories-section">
         <h2 className="text-2xl font-semibold mb-4 text-center">Categories</h2>
         {/* Add/Edit Category Form Card */}
-        <div className={cardClasses}>
+        <Card>
           <h3 className="text-xl font-semibold mb-3">{isEditing ? 'Edit Category' : 'Add New Category'}</h3>
           <form onSubmit={handleFormSubmit} className="space-y-3">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-1">Name:</label>
-            <input
+            <Input
               id="name"
               type="text"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
-              className={`${inputClasses} w-full`}
+              className="w-full"
               placeholder="e.g., Groceries"
               required
             />
           </div>
           <div>
             <label htmlFor="color" className="block text-sm font-medium mb-1">Color (Tailwind Class):</label>
-            <select
+            <Select
               id="color"
               value={formColor}
               onChange={(e) => setFormColor(e.target.value)}
-              className={`${inputClasses} w-full`}
+              className="w-full"
               required
-            >
-              <option value="" disabled className={textMutedClasses}>Select a color</option>
-              {tailwindColors.map(colorClass => (
-                <option key={colorClass} value={colorClass}>
-                  {colorClass}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Select a color', disabled: true },
+                ...tailwindColors.map(colorClass => ({ value: colorClass, label: colorClass }))
+              ]}
+            />
             {formColor && (
               <div className="mt-2 p-2 flex items-center">
                 <span className={`inline-block w-6 h-6 rounded mr-2 ${formColor}`}></span>
@@ -296,28 +294,24 @@ export default function ManagePage() {
             )}
           </div>
           <div className="flex space-x-2">
-            <button type="submit" className={buttonClasses}>
+            <Button type="submit">
               {isEditing ? 'Update Category' : 'Add Category'}
-            </button>
+            </Button>
             {isEditing && (
-              <button type="button" onClick={resetForm} className={`${buttonClasses} bg-gray-500 hover:bg-gray-600`}>
+              <Button type="button" variant="secondary" onClick={resetForm}>
                 Cancel Edit
-              </button>
+              </Button>
             )}
           </div>
         </form>
-      </div>
+      </Card>
       
-      {error && (
-        <div className="mt-4 p-3 bg-red-800 border border-red-700 text-white rounded text-center">
-          <p>Category Error: {error}</p>
-        </div>
-      )}
+      <MessageDisplay message={error ? `Category Error: ${error}` : null} type="error" className="mt-4 text-center" />
 
       {/* Categories List Card */}
-      <div className={`${cardClasses} mt-8`}>
+      <Card className="mt-8">
         <h3 className="text-xl font-semibold mb-4">Existing Categories</h3>
-        {isLoading && <p>Loading categories...</p>}
+        {isLoading && <LoadingSpinner text="Loading categories..." />}
         {!isLoading && categories.length === 0 && !error && (
           <p className={textMutedClasses}>No categories found. Add some using the form above.</p>
         )}
@@ -325,23 +319,20 @@ export default function ManagePage() {
           <ul className="space-y-3">
             {categories.map(cat => (
               <li key={cat.id} className="flex items-center justify-between p-3 bg-gray-700 rounded">
-                <div className="flex items-center">
-                  <span className={`inline-block w-5 h-5 rounded mr-3 ${cat.color}`}></span>
-                  <span className="font-medium">{cat.name}</span>
-                </div>
+                <CategoryBadge category={cat} />
                 <div className="space-x-2">
-                  <button onClick={() => handleEdit(cat)} className={`${buttonClasses} bg-yellow-500 hover:bg-yellow-600`}>
+                  <Button onClick={() => handleEdit(cat)} variant="secondary" className="bg-yellow-500 hover:bg-yellow-600">
                     Edit
-                  </button>
-                  <button onClick={() => handleDelete(cat.id)} className={destructiveButtonClasses}>
+                  </Button>
+                  <Button onClick={() => handleDelete(cat.id)} variant="destructive">
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </Card>
       </section>
 
       {/* Budget Lines Section - Placeholder for now */}
@@ -349,29 +340,29 @@ export default function ManagePage() {
         <h2 className="text-2xl font-semibold mb-4 text-center">Budget Lines for Month ID: {currentMonthId}</h2>
         
         {/* Add/Edit Budget Line Form Card */}
-        <div className={cardClasses}>
+        <Card>
           <h3 className="text-xl font-semibold mb-3">{isEditingBL ? 'Edit Budget Line' : 'Add New Budget Line'}</h3>
           <form onSubmit={handleBLFormSubmit} className="space-y-3">
             <div>
               <label htmlFor="bl_label" className="block text-sm font-medium mb-1">Label:</label>
-              <input
+              <Input
                 id="bl_label"
                 type="text"
                 value={formBLLabel}
                 onChange={(e) => setFormBLLabel(e.target.value)}
-                className={`${inputClasses} w-full`}
+                className="w-full"
                 placeholder="e.g., Coffee Supplies"
                 required
               />
             </div>
             <div>
               <label htmlFor="bl_expected" className="block text-sm font-medium mb-1">Expected Amount:</label>
-              <input
+              <Input
                 id="bl_expected"
                 type="number"
                 value={formBLExpected}
                 onChange={(e) => setFormBLExpected(e.target.value)}
-                className={`${inputClasses} w-full`}
+                className="w-full"
                 placeholder="e.g., 50.00"
                 step="0.01"
                 required
@@ -379,47 +370,38 @@ export default function ManagePage() {
             </div>
             <div>
               <label htmlFor="bl_category" className="block text-sm font-medium mb-1">Category:</label>
-              <select
+              <Select
                 id="bl_category"
                 value={formBLCategoryID}
                 onChange={(e) => setFormBLCategoryID(e.target.value)}
-                className={`${inputClasses} w-full`}
+                className="w-full"
                 required
                 disabled={categories.length === 0}
-              >
-                <option value="" disabled className={textMutedClasses}>
-                  {categories.length === 0 ? 'Please add categories first' : 'Select a category'}
-                </option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id.toString()}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: categories.length === 0 ? 'Please add categories first' : 'Select a category', disabled: true },
+                  ...categories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
+                ]}
+              />
             </div>
             <div className="flex space-x-2">
-              <button type="submit" className={buttonClasses} disabled={categories.length === 0 || !currentMonthId}>
+              <Button type="submit" disabled={categories.length === 0 || !currentMonthId}>
                 {isEditingBL ? 'Update Budget Line' : 'Add Budget Line'}
-              </button>
+              </Button>
               {isEditingBL && (
-                <button type="button" onClick={resetBLForm} className={`${buttonClasses} bg-gray-500 hover:bg-gray-600`}>
+                <Button type="button" variant="secondary" onClick={resetBLForm}>
                   Cancel Edit
-                </button>
+                </Button>
               )}
             </div>
           </form>
-        </div>
+        </Card>
 
-        {errorBL && (
-          <div className="mt-4 p-3 bg-red-800 border border-red-700 text-white rounded text-center">
-            <p>Budget Line Error: {errorBL}</p>
-          </div>
-        )}
+      <MessageDisplay message={errorBL ? `Budget Line Error: ${errorBL}` : null} type="error" className="mt-4 text-center" />
 
         {/* Budget Lines List Card */}
-        <div className={`${cardClasses} mt-8`}>
+        <Card className="mt-8">
           <h3 className="text-xl font-semibold mb-4">Existing Budget Lines</h3>
-          {isLoadingBL && <p>Loading budget lines...</p>}
+        {isLoadingBL && <LoadingSpinner text="Loading budget lines..." />}
           {!isLoadingBL && budgetLines.length === 0 && !errorBL && (
              <p className={textMutedClasses}>
              {currentMonthId ? 'No budget lines found for this month.' : 'Select a month ID to see budget lines.'}
@@ -430,24 +412,23 @@ export default function ManagePage() {
               {budgetLines.map(bl => (
                 <li key={bl.id} className="flex items-center justify-between p-3 bg-gray-700 rounded">
                   <div className="flex items-center">
-                    <span className={`inline-block w-5 h-5 rounded mr-3 ${bl.category_color || 'bg-gray-500'}`}></span>
-                    <span className="font-medium mr-2">{bl.label}</span>
-                    <span className="text-sm text-gray-400">({bl.category_name})</span>
+                    <CategoryBadge category={{ name: bl.category_name, color: bl.category_color || 'bg-gray-500' }} className="mr-2"/>
+                    <span className="font-medium">{bl.label}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <span className="font-mono text-sm">${bl.expected.toFixed(2)}</span>
-                    <button onClick={() => handleBLEdit(bl)} className={`${buttonClasses} bg-yellow-500 hover:bg-yellow-600 text-xs`}>
+                    <Button onClick={() => handleBLEdit(bl)} variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-xs">
                       Edit
-                    </button>
-                    <button onClick={() => handleBLDelete(bl.id)} className={`${destructiveButtonClasses} text-xs`}>
+                    </Button>
+                    <Button onClick={() => handleBLDelete(bl.id)} variant="destructive" className="text-xs">
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       </section>
     </div>
   );
