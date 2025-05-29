@@ -5,7 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Helper to format currency
 export const formatCurrency = (amount: number | null | undefined) => {
   if (amount === null || amount === undefined) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(0);

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getDashboardData, DashboardPayload, CategorySummary, BudgetLineDetail } from '../lib/api'; // Ensure snake_case interfaces are exported from api.ts
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Badge } from '../components/ui/badge'; // For general purpose badges if needed
-import { CategoryBadge } from '../components/CategoryBadge'; // Assuming this component exists and works as described
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { getDashboardData, DashboardPayload, CategorySummary, BudgetLineDetail } from '../lib/api';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
+import { Badge } from '../components/ui/Badge';
+import { CategoryBadge } from '../components/CategoryBadge';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/Alert';
 import { Loader2 } from 'lucide-react';
-import { formatCurrency } from '../lib/utils'; // Updated import
+import { formatCurrency } from '../lib/utils';
 
 export default function Dashboard() {
   const [searchParams] = useSearchParams();

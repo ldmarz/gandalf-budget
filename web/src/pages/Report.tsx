@@ -6,13 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import ReadOnlyDashboardView from '../components/ReadOnlyDashboardView'; // Added import
+import ReadOnlyDashboardView from '../components/ReadOnlyDashboardView';
 
-// Helper to format date strings
 const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A';
   try {
-    // Attempt to handle both ISO string with Z and without
     const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -20,11 +18,11 @@ const formatDate = (dateString: string) => {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'UTC' // Assuming created_at is UTC, display as such or convert to local
+      timeZone: 'UTC'
     });
   } catch (e) {
     console.warn("Failed to parse date:", dateString, e);
-    return dateString; // Fallback if parsing fails
+    return dateString;
   }
 };
 
@@ -50,7 +48,7 @@ export default function ReportPage() {
     setSnapshots([]);
 
     const yearNum = parseInt(yearInput, 10);
-    if (isNaN(yearNum) || yearInput.length !== 4) { // Basic year format validation
+    if (isNaN(yearNum) || yearInput.length !== 4) {
       setErrorSnapshots("Please enter a valid four-digit year.");
       return;
     }
@@ -72,7 +70,7 @@ export default function ReportPage() {
 
   const handleViewSnapshot = async (snapId: number) => {
     setSelectedSnapId(snapId);
-    setSnapshotDetail(null); // Clear previous detail
+    setSnapshotDetail(null);
     setErrorDetail(null);
     setLoadingDetail(true);
     try {
@@ -101,8 +99,8 @@ export default function ReportPage() {
               value={yearInput}
               onChange={(e) => setYearInput(e.target.value)}
               className="max-w-xs"
-              min="2000" // Reasonable min year
-              max="2099" // Reasonable max year
+              min="2000"
+              max="2099"
             />
             <Button onClick={handleLoadReports} disabled={loadingSnapshots}>
               {loadingSnapshots && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -187,8 +185,6 @@ export default function ReportPage() {
       {snapshotDetail && !loadingDetail && (
         <Card className="mt-6">
           <CardHeader>
-            {/* Title is now part of ReadOnlyDashboardView, but we can keep a general title here or remove */}
-            {/* <CardTitle>Snapshot Detail: {snapshotDetail.month} {snapshotDetail.year}</CardTitle> */}
              <CardDescription>
               Displaying the content of the selected snapshot.
             </CardDescription>

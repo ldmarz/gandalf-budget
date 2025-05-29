@@ -11,16 +11,13 @@ import (
 	"testing"
 )
 
-// MockStore is a mock implementation of the store.Store interface for testing.
 type MockStore struct {
-	// Category methods
 	MockGetAllCategories func() ([]store.Category, error)
 	MockCreateCategory   func(category *store.Category) error
 	MockGetCategoryByID  func(id int64) (*store.Category, error)
 	MockUpdateCategory   func(category *store.Category) error
 	MockDeleteCategory   func(id int64) error
 
-	// BudgetLine and ActualLine methods
 	MockCreateBudgetLine        func(b *store.BudgetLine) (int64, error)
 	MockGetBudgetLinesByMonthID func(monthID int) ([]store.BudgetLine, error)
 	MockUpdateBudgetLine        func(b *store.BudgetLine) error
@@ -30,7 +27,6 @@ type MockStore struct {
 	MockGetBudgetLineByID       func(id int64) (*store.BudgetLine, error)
 }
 
-// Implement store.Store interface for MockStore
 func (m *MockStore) GetAllCategories() ([]store.Category, error) {
 	if m.MockGetAllCategories != nil {
 		return m.MockGetAllCategories()
@@ -115,10 +111,9 @@ func (m *MockStore) GetBudgetLineByID(id int64) (*store.BudgetLine, error) {
 	return nil, fmt.Errorf("MockGetBudgetLineByID not implemented")
 }
 
-// TestCreateBudgetLineHandler tests the CreateBudgetLineHandler.
 func TestCreateBudgetLineHandler(t *testing.T) {
 	mockStore := &MockStore{}
-	handler := CreateBudgetLineHandler(mockStore) // Assuming this is the correct handler name
+	handler := CreateBudgetLineHandler(mockStore)
 
 	t.Run("successful creation", func(t *testing.T) {
 		expectedID := int64(1)
@@ -129,7 +124,7 @@ func TestCreateBudgetLineHandler(t *testing.T) {
 			Expected:   150.00,
 		}
 		createdBudgetLine := store.BudgetLine{
-			ID:         int(expectedID), // Note: handler sets this
+			ID:         int(expectedID),
 			MonthID:    inputBudgetLine.MonthID,
 			CategoryID: inputBudgetLine.CategoryID,
 			Label:      inputBudgetLine.Label,
@@ -140,7 +135,6 @@ func TestCreateBudgetLineHandler(t *testing.T) {
 			if bl.Label != inputBudgetLine.Label || bl.Expected != inputBudgetLine.Expected || bl.MonthID != inputBudgetLine.MonthID || bl.CategoryID != inputBudgetLine.CategoryID {
 				t.Errorf("MockCreateBudgetLine called with unexpected data: got %+v, want label %s", bl, inputBudgetLine.Label)
 			}
-			// The handler will update the ID of the passed-in budget line, so we don't check it here.
 			return expectedID, nil
 		}
 
@@ -165,7 +159,6 @@ func TestCreateBudgetLineHandler(t *testing.T) {
 		if respBody.Label != createdBudgetLine.Label {
 			t.Errorf("expected label %s, got %s", createdBudgetLine.Label, respBody.Label)
 		}
-		// Add more assertions for other fields if necessary
 	})
 
 	t.Run("invalid request body - bad JSON", func(t *testing.T) {
@@ -178,7 +171,7 @@ func TestCreateBudgetLineHandler(t *testing.T) {
 	})
 
 	t.Run("missing required fields", func(t *testing.T) {
-		budgetLineJSON := `{"label":"Test"}` // Missing month_id, category_id
+		budgetLineJSON := `{"label":"Test"}`
 		req := httptest.NewRequest("POST", "/api/v1/budget-lines", strings.NewReader(budgetLineJSON))
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
@@ -201,7 +194,6 @@ func TestCreateBudgetLineHandler(t *testing.T) {
 	})
 }
 
-// Placeholder for other handler tests
 func TestGetBudgetLinesByMonthIDHandler(t *testing.T) {
 	mockStore := &MockStore{}
 	handler := GetBudgetLinesByMonthIDHandler(mockStore)
@@ -216,7 +208,7 @@ func TestGetBudgetLinesByMonthIDHandler(t *testing.T) {
 		expectedBudgetLines := []store.BudgetLine{
 			{ID: 1, MonthID: monthID, CategoryID: 1, Label: "Food", Expected: 200, ActualID: &actualID1, ActualAmount: &actualAmount1},
 			{ID: 2, MonthID: monthID, CategoryID: 2, Label: "Gas", Expected: 50, ActualID: &actualID2, ActualAmount: &actualAmount2},
-			{ID: 3, MonthID: monthID, CategoryID: 3, Label: "Rent", Expected: 1000, ActualID: nil, ActualAmount: nil}, // Case with no actual line
+			{ID: 3, MonthID: monthID, CategoryID: 3, Label: "Rent", Expected: 1000, ActualID: nil, ActualAmount: nil},
 		}
 		mockStore.MockGetBudgetLinesByMonthID = func(mID int) ([]store.BudgetLine, error) {
 			if mID != monthID {
@@ -246,14 +238,12 @@ func TestGetBudgetLinesByMonthIDHandler(t *testing.T) {
 			if respLine.ID != expectedLine.ID || respLine.Label != expectedLine.Label || respLine.Expected != expectedLine.Expected {
 				t.Errorf("mismatch in line %d basic data: expected %+v, got %+v", i, expectedLine, respLine)
 			}
-			// Compare ActualID
 			if expectedLine.ActualID == nil && respLine.ActualID != nil {
 				t.Errorf("mismatch in line %d ActualID: expected nil, got %v", i, *respLine.ActualID)
 			} else if expectedLine.ActualID != nil && (respLine.ActualID == nil || *respLine.ActualID != *expectedLine.ActualID) {
 				t.Errorf("mismatch in line %d ActualID: expected %v, got %v", i, *expectedLine.ActualID, respLine.ActualID)
 			}
 
-			// Compare ActualAmount
 			if expectedLine.ActualAmount == nil && respLine.ActualAmount != nil {
 				t.Errorf("mismatch in line %d ActualAmount: expected nil, got %v", i, *respLine.ActualAmount)
 			} else if expectedLine.ActualAmount != nil && (respLine.ActualAmount == nil || *respLine.ActualAmount != *expectedLine.ActualAmount) {
@@ -296,7 +286,7 @@ func TestGetBudgetLinesByMonthIDHandler(t *testing.T) {
 	t.Run("no budget lines found", func(t *testing.T) {
 		monthID := 3
 		mockStore.MockGetBudgetLinesByMonthID = func(mID int) ([]store.BudgetLine, error) {
-			return []store.BudgetLine{}, nil // Empty slice
+			return []store.BudgetLine{}, nil
 		}
 		req := httptest.NewRequest("GET", fmt.Sprintf("/api/v1/budget-lines?month_id=%d", monthID), nil)
 		rr := httptest.NewRecorder()
@@ -376,7 +366,7 @@ func TestUpdateBudgetLineHandler(t *testing.T) {
 	t.Run("budget line not found", func(t *testing.T) {
 		budgetLineID := int64(2)
 		mockStore.MockGetBudgetLineByID = func(id int64) (*store.BudgetLine, error) {
-			return nil, nil // Simulate not found
+			return nil, nil
 		}
 		payload := `{"label":"Any Label"}`
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/api/v1/budget-lines/%d", budgetLineID), strings.NewReader(payload))
@@ -396,7 +386,7 @@ func TestUpdateBudgetLineHandler(t *testing.T) {
 			t.Errorf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
 		}
 	})
-	
+
 	t.Run("invalid request body - bad JSON", func(t *testing.T) {
 		req := httptest.NewRequest("PUT", "/api/v1/budget-lines/1", strings.NewReader("{not_json"))
 		rr := httptest.NewRecorder()
@@ -439,7 +429,6 @@ func TestUpdateBudgetLineHandler(t *testing.T) {
 	})
 }
 
-// Helper for tests needing pointers to basic types
 var pointy = struct {
     String  func(s string) *string
     Float64 func(f float64) *float64
@@ -500,10 +489,6 @@ func TestDeleteBudgetLineHandler(t *testing.T) {
 		}
 	})
 
-	// Note: store.DeleteBudgetLine is expected to handle "not found" by returning an error.
-	// If it were to return sql.ErrNoRows specifically and the handler distinguished this,
-	// a separate test for http.StatusNotFound would be appropriate.
-	// Current handler returns InternalServerError for any store error.
 }
 
 func TestUpdateActualLineHandler(t *testing.T) {
@@ -513,14 +498,14 @@ func TestUpdateActualLineHandler(t *testing.T) {
 	t.Run("successful update", func(t *testing.T) {
 		actualLineID := int64(1)
 		originalActualLine := &store.ActualLine{
-			ID:           actualLineID, // Corrected: ID type is int64
+			ID:           actualLineID,
 			BudgetLineID: 10,
 			Actual:       50.00,
 		}
 		updatePayload := struct {
 			Actual *float64 `json:"actual"`
 		}{
-			Actual: pointy.Float64(75.50), // Valid amount
+			Actual: pointy.Float64(75.50),
 		}
 		
 		var capturedActualLine store.ActualLine
@@ -531,7 +516,7 @@ func TestUpdateActualLineHandler(t *testing.T) {
 			return originalActualLine, nil
 		}
 		mockStore.MockUpdateActualLine = func(al *store.ActualLine) error {
-			capturedActualLine = *al // Capture the line passed to the mock
+			capturedActualLine = *al
 			if al.ID != actualLineID || al.Actual != *updatePayload.Actual {
 				t.Errorf("UpdateActualLine called with unexpected data: got %+v, want actual %f", al, *updatePayload.Actual)
 			}
@@ -587,14 +572,13 @@ func TestUpdateActualLineHandler(t *testing.T) {
 		if err := json.Unmarshal(rr.Body.Bytes(), &respBody); err != nil {
 			t.Fatalf("Failed to unmarshal response body: %v", err)
 		}
-		if respBody.Actual != expectedRounded { // Handler should return the store-modified (rounded) value
+		if respBody.Actual != expectedRounded {
 			t.Errorf("expected response actual %.2f, got %.2f", expectedRounded, respBody.Actual)
 		}
 	})
 
 	t.Run("update with negative amount - handler validation", func(t *testing.T) {
 		actualLineID := int64(6)
-		// No need to mock store calls as handler should reject first
 		updatePayload := struct{ Actual *float64 `json:"actual"` }{Actual: pointy.Float64(-10.50)}
 		
 		payloadBytes, _ := json.Marshal(updatePayload)
@@ -611,9 +595,9 @@ func TestUpdateActualLineHandler(t *testing.T) {
 	})
 
 	t.Run("actual line not found", func(t *testing.T) {
-		actualLineID := int64(2) // Corrected: ID type is int64
+		actualLineID := int64(2)
 		mockStore.MockGetActualLineByID = func(id int64) (*store.ActualLine, error) {
-			return nil, nil // Simulate not found
+			return nil, nil
 		}
 		payload := `{"actual":100.0}`
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/api/v1/actual-lines/%d", actualLineID), strings.NewReader(payload))
@@ -633,7 +617,7 @@ func TestUpdateActualLineHandler(t *testing.T) {
 			t.Errorf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
 		}
 	})
-	
+
 	t.Run("invalid request body - bad JSON", func(t *testing.T) {
 		req := httptest.NewRequest("PUT", "/api/v1/actual-lines/1", strings.NewReader("{not_json"))
 		rr := httptest.NewRecorder()
@@ -644,7 +628,7 @@ func TestUpdateActualLineHandler(t *testing.T) {
 	})
 
 	t.Run("missing actual field in body", func(t *testing.T) {
-		req := httptest.NewRequest("PUT", "/api/v1/actual-lines/1", strings.NewReader("{}")) // Empty JSON
+		req := httptest.NewRequest("PUT", "/api/v1/actual-lines/1", strings.NewReader("{}"))
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 		if rr.Code != http.StatusBadRequest {
@@ -667,7 +651,7 @@ func TestUpdateActualLineHandler(t *testing.T) {
 	})
 
 	t.Run("store error on UpdateActualLine", func(t *testing.T) {
-		actualLineID := int64(4) // Corrected: ID type is int64
+		actualLineID := int64(4)
 		originalActualLine := &store.ActualLine{ID: actualLineID, Actual: 50.0}
 		mockStore.MockGetActualLineByID = func(id int64) (*store.ActualLine, error) {
 			return originalActualLine, nil

@@ -10,13 +10,12 @@ import CategoryBadge from '../components/CategoryBadge';
 
 export default function BoardPage() {
   const [boardData, setBoardData] = useState<api.BoardDataPayload | null>(null);
-  const [currentMonthId, setCurrentMonthId] = useState<number>(1); // Default to month 1, or load from URL param
+  const [currentMonthId, setCurrentMonthId] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalizeMessage, setFinalizeMessage] = useState<string | null>(null);
 
-  // Fetch board data
   const fetchBoardData = async (monthId: number) => {
     setIsLoading(true);
     setError(null);
@@ -47,8 +46,7 @@ export default function BoardPage() {
     try {
       const response = await api.finalizeMonth(currentMonthId);
       setFinalizeMessage(response.message || "Month finalized successfully!");
-      // After finalizing, fetch data for the new month and update currentMonthId
-      setCurrentMonthId(response.new_month_id); // This will trigger useEffect to reload board data
+      setCurrentMonthId(response.new_month_id);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to finalize month. Check if all actuals are set or an error occurred.";
       setError(errorMessage);
@@ -58,18 +56,16 @@ export default function BoardPage() {
   };
 
   const handleActualAmountChange = async (
-    budgetLineId: number, // This is BudgetLineWithActual.id
+    budgetLineId: number,
     newActualString: string
   ) => {
     const newActual = parseFloat(newActualString);
     if (isNaN(newActual) || newActual < 0) {
       alert("Please enter a valid positive number for the actual amount.");
-      // Optionally refetch to revert optimistic update, or just reset input visually
-      fetchBoardData(currentMonthId); 
+      fetchBoardData(currentMonthId);
       return;
     }
 
-    // Optimistic UI update
     if (boardData) {
       setBoardData({
         ...boardData,
@@ -80,27 +76,21 @@ export default function BoardPage() {
     }
 
     try {
-      // PRD implies /line/:id uses budget_line_id.
-      // Assuming api.updateActualLine is adapted or a new function api.updateBudgetLineActual is used.
-      // For this task, we'll assume api.updateActualLine takes budgetLineId as its first argument.
-      // This is a key assumption for this refactor to be fully functional.
       await api.updateActualLine(budgetLineId, { actual: newActual });
     } catch (err) {
       alert(`Failed to update actual amount: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setError(err instanceof Error ? `Failed to update: ${err.message}` : 'Failed to update actual amount.');
-      // Revert optimistic update or refetch
-      fetchBoardData(currentMonthId); 
+      fetchBoardData(currentMonthId);
     }
   };
   
   const getRowColor = (line: api.BudgetLineWithActual): string => {
     if (line.actual_amount && Number(line.actual_amount) > 0) {
-      return 'bg-green-700 hover:bg-green-600'; 
+      return 'bg-green-700 hover:bg-green-600';
     }
-    return 'bg-yellow-700 hover:bg-yellow-600'; 
+    return 'bg-yellow-700 hover:bg-yellow-600';
   };
 
-  // Initial loading state
   if (isLoading && !boardData) return <LoadingSpinner text="Loading board data..." />;
 
   return (
@@ -113,7 +103,7 @@ export default function BoardPage() {
         <div className="flex items-center space-x-2">
           <label htmlFor="month_id_selector_board" className="block text-sm font-medium">Select Month ID:</label>
           <Input
-            id="month_id_selector_board" // Corrected ID
+            id="month_id_selector_board"
             type="number"
             value={currentMonthId}
             onChange={(e) => setCurrentMonthId(parseInt(e.target.value, 10) || 1)}
@@ -125,8 +115,7 @@ export default function BoardPage() {
           <Button
             onClick={handleFinalizeMonth}
             disabled={isFinalizing || isLoading || boardLines.length === 0}
-            className="text-sm bg-green-600 hover:bg-green-700" 
-            // disabled:bg-gray-500 disabled:cursor-not-allowed is handled by disabledClasses in Button
+            className="text-sm bg-green-600 hover:bg-green-700"
           >
             {isFinalizing ? 'Finalizing...' : 'Finalize Current Month'}
           </Button>
@@ -171,7 +160,7 @@ export default function BoardPage() {
                       onBlur={(e: ChangeEvent<HTMLInputElement>) => 
                         handleActualAmountChange(line.id, line.actual_id, e.target.value)
                       }
-                      className="!text-black w-full text-sm" // Ensure text is visible, take full cell width
+                      className="!text-black w-full text-sm"
                       placeholder="0"
                       min="0"
                       step="1"

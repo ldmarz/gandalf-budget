@@ -1,19 +1,16 @@
 package http
 
 import (
-	"gandalf-budget/internal/store" // Import the actual store package
+	"gandalf-budget/internal/store"
 )
 
-// MockStore is a mock implementation of the store.Store interface for testing HTTP handlers.
 type MockStore struct {
-	// --- Category methods ---
 	GetAllCategoriesFunc    func() ([]store.Category, error)
 	CreateCategoryFunc      func(category *store.Category) error
 	GetCategoryByIDFunc     func(id int64) (*store.Category, error)
 	UpdateCategoryFunc      func(category *store.Category) error
 	DeleteCategoryFunc      func(id int64) error
 
-	// --- BudgetLine and ActualLine methods ---
 	CreateBudgetLineFunc        func(b *store.BudgetLine) (int64, error)
 	GetBudgetLinesByMonthIDFunc func(monthID int) ([]store.BudgetLine, error)
 	UpdateBudgetLineFunc        func(b *store.BudgetLine) error
@@ -22,20 +19,17 @@ type MockStore struct {
 	GetActualLineByIDFunc       func(id int64) (*store.ActualLine, error)
 	GetBudgetLineByIDFunc       func(id int64) (*store.BudgetLine, error)
 
-	// --- Board data methods ---
 	GetBoardDataFunc func(monthID int) ([]store.BudgetLine, error)
 
-	// --- Month finalization methods ---
 	CanFinalizeMonthFunc func(monthID int) (bool, string, error)
 	FinalizeMonthFunc    func(monthID int, snapJSON string) (int64, error)
 }
 
-// --- Category methods implementation ---
 func (m *MockStore) GetAllCategories() ([]store.Category, error) {
 	if m.GetAllCategoriesFunc != nil {
 		return m.GetAllCategoriesFunc()
 	}
-	return nil, nil // Default behavior
+	return nil, nil
 }
 func (m *MockStore) CreateCategory(category *store.Category) error {
 	if m.CreateCategoryFunc != nil {
@@ -62,7 +56,6 @@ func (m *MockStore) DeleteCategory(id int64) error {
 	return nil
 }
 
-// --- BudgetLine and ActualLine methods implementation ---
 func (m *MockStore) CreateBudgetLine(b *store.BudgetLine) (int64, error) {
 	if m.CreateBudgetLineFunc != nil {
 		return m.CreateBudgetLineFunc(b)
@@ -106,24 +99,22 @@ func (m *MockStore) GetBudgetLineByID(id int64) (*store.BudgetLine, error) {
 	return nil, nil
 }
 
-// --- Board data methods implementation ---
 func (m *MockStore) GetBoardData(monthID int) ([]store.BudgetLine, error) {
 	if m.GetBoardDataFunc != nil {
 		return m.GetBoardDataFunc(monthID)
 	}
-	return nil, nil // Default behavior
+	return nil, nil
 }
 
-// --- Month finalization methods implementation ---
 func (m *MockStore) CanFinalizeMonth(monthID int) (bool, string, error) {
 	if m.CanFinalizeMonthFunc != nil {
 		return m.CanFinalizeMonthFunc(monthID)
 	}
-	return false, "", nil // Default behavior
+	return false, "", nil
 }
 func (m *MockStore) FinalizeMonth(monthID int, snapJSON string) (int64, error) {
 	if m.FinalizeMonthFunc != nil {
 		return m.FinalizeMonthFunc(monthID, snapJSON)
 	}
-	return 0, nil // Default behavior
+	return 0, nil
 }

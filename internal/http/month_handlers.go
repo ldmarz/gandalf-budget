@@ -10,7 +10,6 @@ import (
 	"gandalf-budget/internal/store"
 )
 
-// FinalizeMonthHandler handles the logic for finalizing a month.
 func FinalizeMonthHandler(s store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
@@ -31,7 +30,6 @@ func FinalizeMonthHandler(s store.Store) http.HandlerFunc {
 			return
 		}
 
-		// 1. Check if month can be finalized
 		canFinalize, reason, err := s.CanFinalizeMonth(monthID)
 		if err != nil {
 			log.Printf("Error checking if month %d can be finalized: %v", monthID, err)
@@ -39,13 +37,10 @@ func FinalizeMonthHandler(s store.Store) http.HandlerFunc {
 			return
 		}
 		if !canFinalize {
-			http.Error(w, reason, http.StatusBadRequest) // Send the reason to the client
+			http.Error(w, reason, http.StatusBadRequest)
 			return
 		}
 
-		// 2. Define dashboard payload for snapshot (using GetBoardData for now)
-		// This part assumes GetBoardData is suitable for the snapshot.
-		// It might need adjustment based on actual dashboard requirements in Milestone 5.
 		boardData, err := s.GetBoardData(monthID)
 		if err != nil {
 			log.Printf("Error fetching board data for snapshot (month %d): %v", monthID, err)
@@ -60,7 +55,6 @@ func FinalizeMonthHandler(s store.Store) http.HandlerFunc {
 		}
 		snapJSON := string(snapJSONBytes)
 
-		// 3. Finalize the month
 		newMonthID, err := s.FinalizeMonth(monthID, snapJSON)
 		if err != nil {
 			log.Printf("Error finalizing month %d: %v", monthID, err)
@@ -68,7 +62,6 @@ func FinalizeMonthHandler(s store.Store) http.HandlerFunc {
 			return
 		}
 
-		// 4. Respond with success
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"message":      "Month finalized successfully",

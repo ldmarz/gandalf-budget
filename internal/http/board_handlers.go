@@ -33,8 +33,6 @@ func GetBoardDataHandler(s store.Store) http.HandlerFunc {
 
 		boardData, err := s.GetBoardData(monthID)
 		if err != nil {
-			// Log the error server-side
-			// log.Printf("Error fetching board data: %v", err)
 			http.Error(w, "Failed to fetch board data", http.StatusInternalServerError)
 			return
 		}
@@ -45,8 +43,6 @@ func GetBoardDataHandler(s store.Store) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(boardData); err != nil {
-			// Log the error server-side
-			// log.Printf("Error encoding board data to JSON: %v", err)
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		}
 	}

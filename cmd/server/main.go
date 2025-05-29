@@ -10,7 +10,6 @@ import (
 	httpinternal "gandalf-budget/internal/http"
 	"gandalf-budget/internal/store"
 
-	// "github.com/jmoiron/sqlx" // Not directly used here, but db is of this type
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -40,7 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create sub VFS for embedded_web_dist: %v", err)
 	}
-	router := httpinternal.NewRouter(distFS, db) // Pass db connection
+	router := httpinternal.NewRouter(distFS, db)
 
 	log.Println("Starting HTTP server on :8080")
 	if err := http.ListenAndServe(":8080", router); err != nil {

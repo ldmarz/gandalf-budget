@@ -12,7 +12,7 @@ import CategoryBadge from '../components/CategoryBadge'; // Import CategoryBadge
 interface Category {
   id: number;
   name: string;
-  color: string; // Tailwind color class e.g., 'bg-red-500'
+  color: string;
 }
 
 export default function ManagePage() {
@@ -20,24 +20,21 @@ export default function ManagePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state for adding/editing
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
   const [formName, setFormName] = useState<string>('');
-  const [formColor, setFormColor] = useState<string>(''); // e.g., 'bg-blue-500'
+  const [formColor, setFormColor] = useState<string>('');
 
-  // --- Budget Line State ---
   const [budgetLines, setBudgetLines] = useState<api.BudgetLine[]>([]);
-  const [currentMonthId, setCurrentMonthId] = useState<number>(1); // Default to month 1 for now
+  const [currentMonthId, setCurrentMonthId] = useState<number>(1);
   const [isLoadingBL, setIsLoadingBL] = useState(true);
   const [errorBL, setErrorBL] = useState<string | null>(null);
 
-  // Form state for budget lines
   const [isEditingBL, setIsEditingBL] = useState<boolean>(false);
   const [currentBL, setCurrentBL] = useState<api.BudgetLine | null>(null);
   const [formBLLabel, setFormBLLabel] = useState<string>('');
-  const [formBLExpected, setFormBLExpected] = useState<string>(''); // Store as string for form input
-  const [formBLCategoryID, setFormBLCategoryID] = useState<string>(''); // Store as string for form input
+  const [formBLExpected, setFormBLExpected] = useState<string>('');
+  const [formBLCategoryID, setFormBLCategoryID] = useState<string>('');
 
   const tailwindColors = [
     'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500', 'bg-lime-500',
@@ -46,17 +43,15 @@ export default function ManagePage() {
     'bg-pink-500', 'bg-rose-500', 'bg-slate-500', 'bg-gray-500',
   ];
 
-
-  // Fetch categories
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
       const data = await get<Category[]>('/categories');
-      setCategories(data || []); // Handle null response from API if no categories
+      setCategories(data || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch categories');
-      setCategories([]); // Clear categories on error
+      setCategories([]);
     } finally {
       setIsLoading(false);
     }
@@ -64,14 +59,11 @@ export default function ManagePage() {
 
   useEffect(() => {
     fetchCategories();
-    // Fetch budget lines for the default/current month
     if (currentMonthId) {
       fetchBudgetLines(currentMonthId);
     }
-  }, [currentMonthId]); // Re-fetch if currentMonthId changes
+  }, [currentMonthId]);
 
-  // --- Category Functions ---
-  // Form handling
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formColor.trim()) {
@@ -87,11 +79,11 @@ export default function ManagePage() {
       } else {
         await post<Category, Omit<Category, 'id'>>('/categories', categoryData);
       }
-      await fetchCategories(); // Re-fetch all categories
+      await fetchCategories();
       resetForm();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : (isEditing ? 'Failed to update category' : 'Failed to create category');
-      alert(errorMsg); // Simple alert for now
+      alert(errorMsg);
       setError(errorMsg);
     }
   };
@@ -101,14 +93,14 @@ export default function ManagePage() {
     setCurrentCategory(category);
     setFormName(category.name);
     setFormColor(category.color);
-    window.scrollTo(0, 0); // Scroll to top to see the form
+    window.scrollTo(0, 0);
   };
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
       try {
         await del<null>(`/categories/${id}`);
-        await fetchCategories(); // Re-fetch
+        await fetchCategories();
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to delete category';
         alert(errorMsg);
@@ -124,19 +116,10 @@ export default function ManagePage() {
     setFormColor('');
   };
 
-  const resetForm = () => {
-    setIsEditing(false);
-    setCurrentCategory(null);
-    setFormName('');
-    setFormColor('');
-  };
-
-  // --- Budget Line Functions ---
   const fetchBudgetLines = async (monthId: number) => {
     setIsLoadingBL(true);
     try {
       const data = await api.getBudgetLinesByMonth(monthId);
-      // Map category details to budget lines
       const linesWithCategoryDetails = data.map(line => {
         const category = categories.find(c => c.id === line.category_id);
         return {
@@ -159,7 +142,7 @@ export default function ManagePage() {
     if (categories.length > 0 && currentMonthId) {
         fetchBudgetLines(currentMonthId);
     }
-  }, [categories, currentMonthId]); // Re-fetch budget lines if categories array or monthId changes
+  }, [categories, currentMonthId]);
 
   const resetBLForm = () => {
     setIsEditingBL(false);
@@ -193,25 +176,24 @@ export default function ManagePage() {
       return;
     }
 
-    const budgetLineData = { 
-      month_id: currentMonthId, 
-      category_id: categoryId, 
-      label: formBLLabel, 
-      expected: expectedAmount 
+    const budgetLineData = {
+      month_id: currentMonthId,
+      category_id: categoryId,
+      label: formBLLabel,
+      expected: expectedAmount
     };
 
     try {
       if (isEditingBL && currentBL) {
-        // For PUT, only send fields that can be updated (label, expected)
         await api.updateBudgetLine(currentBL.id, { label: formBLLabel, expected: expectedAmount });
       } else {
         await api.createBudgetLine(budgetLineData);
       }
-      await fetchBudgetLines(currentMonthId); // Re-fetch budget lines for the current month
+      await fetchBudgetLines(currentMonthId);
       resetBLForm();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : (isEditingBL ? 'Failed to update budget line' : 'Failed to create budget line');
-      alert(errorMsg); 
+      alert(errorMsg);
       setErrorBL(errorMsg);
     }
   };
@@ -220,7 +202,7 @@ export default function ManagePage() {
     if (window.confirm('Are you sure you want to delete this budget line?')) {
       try {
         await api.deleteBudgetLine(id);
-        await fetchBudgetLines(currentMonthId); // Re-fetch
+        await fetchBudgetLines(currentMonthId);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to delete budget line';
         alert(errorMsg);
@@ -229,14 +211,12 @@ export default function ManagePage() {
     }
   };
 
-
   if (isLoading) return <LoadingSpinner text="Loading page..." />;
 
   return (
     <div className="p-4 bg-gray-900 min-h-screen text-white">
       <h1 className="text-2xl font-bold mb-6 text-center">Manage Data</h1>
 
-      {/* Month Selector (Simplified) */}
       <Card className="mb-6">
         <h2 className="text-xl font-semibold mb-3">Select Month</h2>
         <div className="flex items-center space-x-2">
@@ -254,10 +234,8 @@ export default function ManagePage() {
         <p className={textMutedClasses}>Note: This is a simplified month selector. Use a valid Month ID from your database.</p>
       </Card>
       
-      {/* Categories Section */}
       <section id="categories-section">
         <h2 className="text-2xl font-semibold mb-4 text-center">Categories</h2>
-        {/* Add/Edit Category Form Card */}
         <Card>
           <h3 className="text-xl font-semibold mb-3">{isEditing ? 'Edit Category' : 'Add New Category'}</h3>
           <form onSubmit={handleFormSubmit} className="space-y-3">
@@ -308,7 +286,6 @@ export default function ManagePage() {
       
       <MessageDisplay message={error ? `Category Error: ${error}` : null} type="error" className="mt-4 text-center" />
 
-      {/* Categories List Card */}
       <Card className="mt-8">
         <h3 className="text-xl font-semibold mb-4">Existing Categories</h3>
         {isLoading && <LoadingSpinner text="Loading categories..." />}
@@ -335,11 +312,9 @@ export default function ManagePage() {
       </Card>
       </section>
 
-      {/* Budget Lines Section - Placeholder for now */}
       <section id="budget-lines-section" className="mt-12">
         <h2 className="text-2xl font-semibold mb-4 text-center">Budget Lines for Month ID: {currentMonthId}</h2>
         
-        {/* Add/Edit Budget Line Form Card */}
         <Card>
           <h3 className="text-xl font-semibold mb-3">{isEditingBL ? 'Edit Budget Line' : 'Add New Budget Line'}</h3>
           <form onSubmit={handleBLFormSubmit} className="space-y-3">
@@ -398,7 +373,6 @@ export default function ManagePage() {
 
       <MessageDisplay message={errorBL ? `Budget Line Error: ${errorBL}` : null} type="error" className="mt-4 text-center" />
 
-        {/* Budget Lines List Card */}
         <Card className="mt-8">
           <h3 className="text-xl font-semibold mb-4">Existing Budget Lines</h3>
         {isLoadingBL && <LoadingSpinner text="Loading budget lines..." />}
@@ -433,5 +407,3 @@ export default function ManagePage() {
     </div>
   );
 }
-// Add api import
-import * as api from '../lib/api';

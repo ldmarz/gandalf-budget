@@ -11,7 +11,7 @@ import (
 
 	"database/sql" // Required for sql.ErrNoRows
 	"github.com/anaxita/logit/internal/store"
-	"github.com/stretchr/testify/assert" // Using testify for assertions
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetAnnualReport_Success(t *testing.T) {
@@ -21,7 +21,7 @@ func TestGetAnnualReport_Success(t *testing.T) {
 		{ID: 2, MonthID: 11, Year: 2023, Month: "February", SnapCreatedAt: mockTime.Add(time.Hour * 24 * 30)},
 	}
 
-	mockStore := &store.ReusableMockStore{ // Changed to ReusableMockStore
+	mockStore := &store.ReusableMockStore{
 		MockGetAnnualSnapshotsMetadataByYear: func(year int) ([]store.AnnualSnapMeta, error) {
 			if year == 2023 {
 				return expectedSnapshots, nil
@@ -44,10 +44,10 @@ func TestGetAnnualReport_Success(t *testing.T) {
 }
 
 func TestGetAnnualReport_NoData(t *testing.T) {
-	mockStore := &store.ReusableMockStore{ // Changed to ReusableMockStore
+	mockStore := &store.ReusableMockStore{
 		MockGetAnnualSnapshotsMetadataByYear: func(year int) ([]store.AnnualSnapMeta, error) {
 			if year == 2024 {
-				return []store.AnnualSnapMeta{}, nil // Empty slice
+				return []store.AnnualSnapMeta{}, nil
 			}
 			return nil, errors.New("unexpected year for mock")
 		},
@@ -63,10 +63,9 @@ func TestGetAnnualReport_NoData(t *testing.T) {
 }
 
 func TestGetAnnualReport_InvalidYearParameter(t *testing.T) {
-	mockStore := &store.ReusableMockStore{} // Changed to ReusableMockStore, store interaction not expected
+	mockStore := &store.ReusableMockStore{}
 	handler := GetAnnualReport(mockStore)
 
-	// Test case 1: Non-integer year
 	req1 := httptest.NewRequest("GET", "/api/v1/reports/annual?year=abc", nil)
 	rr1 := httptest.NewRecorder()
 	handler.ServeHTTP(rr1, req1)
@@ -74,7 +73,6 @@ func TestGetAnnualReport_InvalidYearParameter(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr1.Code, "handler returned wrong status code for non-integer year")
 	assert.Contains(t, rr1.Body.String(), "Invalid year format: must be an integer", "incorrect error message for non-integer year")
 
-	// Test case 2: Missing year parameter
 	req2 := httptest.NewRequest("GET", "/api/v1/reports/annual", nil)
 	rr2 := httptest.NewRecorder()
 	handler.ServeHTTP(rr2, req2)
@@ -82,7 +80,6 @@ func TestGetAnnualReport_InvalidYearParameter(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr2.Code, "handler returned wrong status code for missing year")
 	assert.Contains(t, rr2.Body.String(), "year query parameter is required", "incorrect error message for missing year")
 
-	// Test case 3: Year out of reasonable range (e.g., too small)
 	req3 := httptest.NewRequest("GET", "/api/v1/reports/annual?year=100", nil)
 	rr3 := httptest.NewRecorder()
 	handler.ServeHTTP(rr3, req3)
@@ -92,7 +89,7 @@ func TestGetAnnualReport_InvalidYearParameter(t *testing.T) {
 }
 
 func TestGetAnnualReport_StoreError(t *testing.T) {
-	mockStore := &store.ReusableMockStore{ // Changed to ReusableMockStore
+	mockStore := &store.ReusableMockStore{
 		MockGetAnnualSnapshotsMetadataByYear: func(year int) ([]store.AnnualSnapMeta, error) {
 			return nil, errors.New("database connection failed")
 		},
@@ -105,15 +102,12 @@ func TestGetAnnualReport_StoreError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code, "handler returned wrong status code for store error")
 	expectedErrorMsg := "Failed to retrieve annual report data: database connection failed"
-	// Using strings.TrimSpace because http.Error adds a newline.
 	assert.Equal(t, expectedErrorMsg, strings.TrimSpace(rr.Body.String()), "handler returned unexpected error message for store error")
 }
 
-// --- Tests for GetSnapshotDetail ---
-
 func TestGetSnapshotDetail_Success(t *testing.T) {
 	expectedJSON := `{"month_id":1,"year":2023,"month":"January","total_expected":1000,"total_actual":950,"categories":[]}`
-	mockStore := &store.ReusableMockStore{ // Changed to ReusableMockStore
+	mockStore := &store.ReusableMockStore{
 		MockGetAnnualSnapshotJSONByID: func(snapID int64) (string, error) {
 			if snapID == 42 {
 				return expectedJSON, nil
@@ -123,8 +117,6 @@ func TestGetSnapshotDetail_Success(t *testing.T) {
 	}
 
 	handler := GetSnapshotDetail(mockStore)
-	// The router registers "/api/v1/reports/snapshots/", so the request path needs to reflect that
-	// for the ID parsing in the handler (strings.TrimPrefix) to work correctly.
 	req := httptest.NewRequest("GET", "/api/v1/reports/snapshots/42", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -135,10 +127,10 @@ func TestGetSnapshotDetail_Success(t *testing.T) {
 }
 
 func TestGetSnapshotDetail_NotFound(t *testing.T) {
-	mockStore := &store.ReusableMockStore{ // Changed to ReusableMockStore
+	mockStore := &store.ReusableMockStore{
 		MockGetAnnualSnapshotJSONByID: func(snapID int64) (string, error) {
 			if snapID == 404 {
-				return "", sql.ErrNoRows // Use actual sql.ErrNoRows
+				return "", sql.ErrNoRows
 			}
 			return "", errors.New("unexpected snapID for mock")
 		},
@@ -154,7 +146,7 @@ func TestGetSnapshotDetail_NotFound(t *testing.T) {
 }
 
 func TestGetSnapshotDetail_InvalidID(t *testing.T) {
-	mockStore := &store.ReusableMockStore{} // Changed to ReusableMockStore, store interaction not expected
+	mockStore := &store.ReusableMockStore{}
 	handler := GetSnapshotDetail(mockStore)
 
 	req := httptest.NewRequest("GET", "/api/v1/reports/snapshots/abc", nil)
@@ -164,7 +156,6 @@ func TestGetSnapshotDetail_InvalidID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "handler returned wrong status code for invalid ID")
 	assert.Contains(t, rr.Body.String(), "Invalid Snapshot ID format: must be an integer", "incorrect error message for invalid ID")
 
-	// Test with empty ID (if possible, depends on router prefix stripping)
 	reqEmpty := httptest.NewRequest("GET", "/api/v1/reports/snapshots/", nil)
 	rrEmpty := httptest.NewRecorder()
 	handler.ServeHTTP(rrEmpty, reqEmpty)
@@ -173,7 +164,7 @@ func TestGetSnapshotDetail_InvalidID(t *testing.T) {
 }
 
 func TestGetSnapshotDetail_StoreError(t *testing.T) {
-	mockStore := &store.ReusableMockStore{ // Changed to ReusableMockStore
+	mockStore := &store.ReusableMockStore{
 		MockGetAnnualSnapshotJSONByID: func(snapID int64) (string, error) {
 			return "", errors.New("internal database error")
 		},
@@ -189,13 +180,11 @@ func TestGetSnapshotDetail_StoreError(t *testing.T) {
 	assert.Equal(t, expectedMsg, strings.TrimSpace(rr.Body.String()), "incorrect error message for store error")
 }
 
-// TestGetSnapshotDetail_NotFound_WithSqlErrNoRows is updated to use sql.ErrNoRows in the mock.
-// This ensures the test accurately reflects the handler's `errors.Is(err, sql.ErrNoRows)` check.
 func TestGetSnapshotDetail_NotFound_WithSqlErrNoRows(t *testing.T) {
-	mockStore := &store.ReusableMockStore{ // Changed to ReusableMockStore
+	mockStore := &store.ReusableMockStore{
 		MockGetAnnualSnapshotJSONByID: func(snapID int64) (string, error) {
 			if snapID == 404 {
-				return "", sql.ErrNoRows // Using the actual sql.ErrNoRows
+				return "", sql.ErrNoRows
 			}
 			return "", errors.New("unexpected snapID for mock")
 		},

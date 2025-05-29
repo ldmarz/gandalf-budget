@@ -6,10 +6,6 @@ import (
 	"log"
 )
 
-// Category struct (as defined in models.go)
-
-// GetAllCategories retrieves all categories from the database, ordered by name.
-// It returns an empty slice if no categories are found.
 func (s *sqlStore) GetAllCategories() ([]Category, error) {
 	var categories []Category
 	err := s.DB.Select(&categories, "SELECT id, name, color FROM categories ORDER BY name ASC")
@@ -23,9 +19,6 @@ func (s *sqlStore) GetAllCategories() ([]Category, error) {
 	return categories, nil
 }
 
-// CreateCategory inserts a new category into the database.
-// It requires Name and Color to be set on the Category struct.
-// The ID of the newly created category is set on the input Category struct.
 func (s *sqlStore) CreateCategory(category *Category) error {
 	if category.Name == "" {
 		return fmt.Errorf("category name cannot be empty")
@@ -49,15 +42,13 @@ func (s *sqlStore) CreateCategory(category *Category) error {
 	return nil
 }
 
-// GetCategoryByID retrieves a single category by its ID.
-// It returns nil if the category is not found.
 func (s *sqlStore) GetCategoryByID(id int64) (*Category, error) {
 	var category Category
 	err := s.DB.Get(&category, "SELECT id, name, color FROM categories WHERE id = ?", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Category with ID %d not found: %v", id, err)
-			return nil, nil // Or a specific "not found" error
+			return nil, nil
 		}
 		log.Printf("Error getting category by ID %d: %v", id, err)
 		return nil, err
@@ -65,9 +56,6 @@ func (s *sqlStore) GetCategoryByID(id int64) (*Category, error) {
 	return &category, nil
 }
 
-// UpdateCategory updates an existing category in the database.
-// It requires ID, Name, and Color to be set on the Category struct.
-// Returns sql.ErrNoRows if no category with the given ID is found or if data was the same.
 func (s *sqlStore) UpdateCategory(category *Category) error {
 	if category.ID == 0 {
 		return fmt.Errorf("category ID cannot be zero for update")
@@ -92,14 +80,12 @@ func (s *sqlStore) UpdateCategory(category *Category) error {
 	}
 	if rowsAffected == 0 {
 		log.Printf("No category found with ID %d to update, or data was the same.", category.ID)
-		return sql.ErrNoRows // Use sql.ErrNoRows to indicate not found or no change
+		return sql.ErrNoRows
 	}
 	log.Printf("Successfully updated category ID %d", category.ID)
 	return nil
 }
 
-// DeleteCategory removes a category from the database by its ID.
-// Returns sql.ErrNoRows if no category with the given ID is found.
 func (s *sqlStore) DeleteCategory(id int64) error {
 	if id == 0 {
 		return fmt.Errorf("category ID cannot be zero for delete")
@@ -120,7 +106,7 @@ func (s *sqlStore) DeleteCategory(id int64) error {
 
 	if rowsAffected == 0 {
 		log.Printf("No category found with ID %d to delete.", id)
-		return sql.ErrNoRows // Use sql.ErrNoRows to indicate not found
+		return sql.ErrNoRows
 	}
 
 	log.Printf("Successfully deleted category ID %d", id)
