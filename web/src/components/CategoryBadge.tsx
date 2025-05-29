@@ -10,7 +10,7 @@ interface CategoryBadgeProps {
   className?: string;
 }
 
-const defaultColor = 'bg-gray-500'; // Default color if category or its color is undefined
+const defaultColor = 'bg-gray-500';
 
 export const CategoryBadge: React.FC<CategoryBadgeProps> = ({ category, className = '' }) => {
   const categoryName = category?.name || 'Unknown Category';

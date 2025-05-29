@@ -11,10 +11,8 @@ import (
 	"gandalf-budget/internal/store"
 )
 
-// HandleGetCategories ... (as before)
 func HandleGetCategories(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// ... (implementation as before) ...
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -30,10 +28,8 @@ func HandleGetCategories(storage store.Store) http.HandlerFunc {
 	}
 }
 
-// HandleCreateCategory ... (as before)
 func HandleCreateCategory(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// ... (implementation as before) ...
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -59,7 +55,6 @@ func HandleCreateCategory(storage store.Store) http.HandlerFunc {
 	}
 }
 
-// HandleUpdateCategory handles requests to update an existing category.
 func HandleUpdateCategory(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
@@ -67,7 +62,6 @@ func HandleUpdateCategory(storage store.Store) http.HandlerFunc {
 			return
 		}
 
-		// Extract ID from path: /api/v1/categories/:id
 		pathParts := strings.Split(strings.TrimSuffix(r.URL.Path, "/"), "/")
 		idStr := pathParts[len(pathParts)-1]
 
@@ -119,7 +113,6 @@ func HandleUpdateCategory(storage store.Store) http.HandlerFunc {
 	}
 }
 
-// HandleDeleteCategory handles requests to delete an existing category.
 func HandleDeleteCategory(storage store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -148,6 +141,6 @@ func HandleDeleteCategory(storage store.Store) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusNoContent) // 204 No Content for successful delete
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

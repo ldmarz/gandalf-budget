@@ -12,19 +12,15 @@ import (
 
 	"gandalf-budget/internal/store" // Adjust to your module path
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3" // In-memory SQLite for testing
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// setupInMemoryDB creates a new in-memory SQLite database for testing
-// and runs migrations.
 func setupInMemoryDB(t *testing.T) *sqlx.DB {
-	// Using ":memory:" for a clean DB for each test function call if setup is per-test.
 	db, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
 
-	// Simplified schema, matching the one in 001_init.sql for categories.
 	schema := `
 	CREATE TABLE categories (
 	  id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,22 +39,18 @@ func TestHandleGetCategories(t *testing.T) {
 	db := setupInMemoryDB(t)
 	defer db.Close()
 
-	// Seed some data
 	initialCategories := []store.Category{
-		{Name: "Food", Color: "bg-red-500"}, // Will get ID 1
-		{Name: "Travel", Color: "bg-blue-500"}, // Will get ID 2
-		{Name: "Entertainment", Color: "bg-green-500"}, // Will get ID 3
+		{Name: "Food", Color: "bg-red-500"},
+		{Name: "Travel", Color: "bg-blue-500"},
+		{Name: "Entertainment", Color: "bg-green-500"},
 	}
 	for _, cat := range initialCategories {
-		// Insert and ignore ID for initial seed, as it's auto-generated
 		_, err := db.Exec(`INSERT INTO categories (name, color) VALUES (?, ?)`, cat.Name, cat.Color)
 		if err != nil {
 			t.Fatalf("Failed to seed category '%s': %v", cat.Name, err)
 		}
 	}
 	
-	// Update initialCategories with expected IDs and sort them by name for comparison
-	// This assumes store.GetAllCategories sorts by name
 	expectedCategories := []store.Category{
 		{ID: 3, Name: "Entertainment", Color: "bg-green-500"},
 		{ID: 1, Name: "Food", Color: "bg-red-500"},
@@ -90,24 +82,11 @@ func TestHandleGetCategories(t *testing.T) {
 		t.Fatalf("handler returned unexpected body size: got %d want %d categories. Body: %s", len(actual), len(expectedCategories), rr.Body.String())
 	}
 	
-	// The actual response from store.GetAllCategories is sorted by name.
-	// So, we compare `actual` directly with our `expectedCategories` which is also sorted by name.
 	for i := range actual {
 		if actual[i].Name != expectedCategories[i].Name || actual[i].Color != expectedCategories[i].Color {
 			t.Errorf("Mismatch at index %d. Got Name: %s, Color: %s. Expected Name: %s, Color: %s",
 				i, actual[i].Name, actual[i].Color, expectedCategories[i].Name, expectedCategories[i].Color)
 		}
-		// We don't check ID here because the seed data's IDs are assigned by the DB.
-		// The important part is that the names and colors match in the correct order.
-		// If ID checking is critical, fetch the seeded data first to get their assigned IDs.
-		// For this version, the expectedCategories are manually assigned IDs based on insertion order,
-		// then re-sorted by name. This should match the output of GetAllCategories.
-		// The actual IDs are 1 for Food, 2 for Travel, 3 for Entertainment.
-		// After sorting expectedCategories by name:
-		// Entertainment (ID 3), Food (ID 1), Travel (ID 2)
-		// The `actual` slice from the handler will also be sorted by name.
-		// So, `actual[0]` should be Entertainment, `actual[1]` Food, `actual[2]` Travel.
-		// Their IDs in the `actual` slice should reflect their DB IDs.
 		if actual[i].ID != expectedCategories[i].ID {
              t.Errorf("Mismatch ID at index %d. Got ID: %d. Expected ID: %d for Name: %s",
                 i, actual[i].ID, expectedCategories[i].ID, actual[i].Name)
@@ -152,7 +131,6 @@ func TestHandleCreateCategory(t *testing.T) {
 		t.Errorf("handler returned category with zero ID")
 	}
 
-	// Verify it's in the database
 	var dbCategory store.Category
 	err = db.Get(&dbCategory, "SELECT id, name, color FROM categories WHERE id = ?", createdCategory.ID)
 	if err != nil {
@@ -198,14 +176,12 @@ func TestHandleCreateCategory_Validation(t *testing.T) {
 	}
 }
 
-// seedCategory is a helper to insert a category and return it with its ID.
 func seedCategory(t *testing.T, db *sqlx.DB, category store.Category) store.Category {
 	t.Helper()
 	_, err := db.Exec(`INSERT INTO categories (name, color) VALUES (?, ?)`, category.Name, category.Color)
 	if err != nil {
 		t.Fatalf("Failed to seed category '%s': %v", category.Name, err)
 	}
-	// Retrieve the category to get its ID
 	var seededCategory store.Category
 	err = db.Get(&seededCategory, "SELECT id, name, color FROM categories WHERE name = ?", category.Name)
 	if err != nil {
@@ -252,7 +228,6 @@ func TestHandleUpdateCategory_Success(t *testing.T) {
 		t.Errorf("handler returned unexpected category ID: got %d want %d", updatedCategory.ID, initialCategory.ID)
 	}
 
-	// Verify in DB
 	dbCategory, err := store.GetCategoryByID(db, initialCategory.ID)
 	if err != nil {
 		t.Fatalf("Could not fetch category from DB after update: %v", err)
@@ -348,9 +323,8 @@ func TestHandleDeleteCategory_Success(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v. Body: %s", status, http.StatusNoContent, rr.Body.String())
 	}
 
-	// Verify in DB
 	deletedCategory, err := store.GetCategoryByID(db, categoryToDelete.ID)
-	if err != nil && err != sql.ErrNoRows { // store.GetCategoryByID returns nil, nil for not found, not sql.ErrNoRows directly
+	if err != nil && err != sql.ErrNoRows {
 		t.Fatalf("Error fetching category from DB after delete: %v", err)
 	}
 	if deletedCategory != nil {

@@ -199,6 +199,10 @@ Beyond the core principles above, the following practices are essential for a hi
     *   Consider integration tests for interactions between components.
     *   Testing helps ensure code quality, prevents regressions, and provides confidence when refactoring or adding new features. (Specific testing strategies and coverage targets might be detailed in a separate document if needed).
 
+### 10.5 Self-Explanatory Code
+*   **Principle:** Code should be self-explanatory. If not, there is a design problem. Avoid adding comments.
+*   **Rationale:** Code that requires extensive comments to be understood can indicate overly complex logic, poor naming, or a design that is difficult to follow. Striving for self-documenting code through clear naming, logical structure, and well-defined components makes the codebase easier to understand and maintain directly from the code itself. While comments have their place for explaining *why* something non-obvious is done, the primary goal should be clarity in the code itself.
+
 ---
 # END (Original PRD)
 

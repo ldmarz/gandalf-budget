@@ -15,9 +15,8 @@ import (
 )
 
 func TestFinalizeMonthHandler(t *testing.T) {
-	mockStore := &MockStore{} // Uses the mock from mock_store_test.go
+	mockStore := &MockStore{}
 
-	// Sample board data for snapshot
 	sampleBoardData := []store.BudgetLine{
 		{ID: 1, MonthID: 1, CategoryID: 1, Label: "Item 1", Expected: 100, ActualAmount: ptrToFloat64(90)},
 	}
@@ -26,12 +25,12 @@ func TestFinalizeMonthHandler(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		monthIDParam       string // Simulates the monthId part of the path
-		pathSuffix         string // e.g., "/finalize" or "/somethingelse"
+		monthIDParam       string
+		pathSuffix         string
 		httpMethod         string
 		setupMock          func(ms *MockStore)
 		expectedStatusCode int
-		expectedBody       interface{} // Can be a success map or an error map/string
+		expectedBody       interface{}
 	}{
 		{
 			name:         "Successful month finalization",
@@ -58,11 +57,11 @@ func TestFinalizeMonthHandler(t *testing.T) {
 					if snapJSON != expectedSnapJSON {
 						return 0, fmt.Errorf("mock error: snapJSON mismatch. Got %s, want %s", snapJSON, expectedSnapJSON)
 					}
-					return 2, nil // new_month_id = 2
+					return 2, nil
 				}
 			},
 			expectedStatusCode: http.StatusOK,
-			expectedBody:       map[string]interface{}{"message": "Month finalized successfully", "new_month_id": float64(2)}, // JSON numbers are float64
+			expectedBody:       map[string]interface{}{"message": "Month finalized successfully", "new_month_id": float64(2)},
 		},
 		{
 			name:         "Cannot finalize month (CanFinalizeMonth returns false)",
@@ -73,8 +72,7 @@ func TestFinalizeMonthHandler(t *testing.T) {
 				ms.CanFinalizeMonthFunc = func(monthID int) (bool, string, error) {
 					return false, "Actuals not set for all lines", nil
 				}
-				// GetBoardData and FinalizeMonth should not be called
-				ms.GetBoardDataFunc = nil 
+				ms.GetBoardDataFunc = nil
 				ms.FinalizeMonthFunc = nil
 			},
 			expectedStatusCode: http.StatusBadRequest,
@@ -134,51 +132,50 @@ func TestFinalizeMonthHandler(t *testing.T) {
 		{
 			name:               "Malformed path (missing /finalize)",
 			monthIDParam:       "1",
-			pathSuffix:         "/somethingelse", // Does not end with /finalize
+			pathSuffix:         "/somethingelse",
 			httpMethod:         http.MethodPut,
 			setupMock:          func(ms *MockStore) {},
-			expectedStatusCode: http.StatusBadRequest, // Based on current handler logic
+			expectedStatusCode: http.StatusBadRequest,
 			expectedBody:       map[string]string{"error": "Invalid path structure for finalize endpoint"},
 		},
 		{
 			name:               "Malformed path (too short)",
-			monthIDParam:       "", // Path will be /api/v1/months//finalize
-			pathSuffix:         "/finalize", 
+			monthIDParam:       "",
+			pathSuffix:         "/finalize",
 			httpMethod:         http.MethodPut,
 			setupMock:          func(ms *MockStore) {},
-			expectedStatusCode: http.StatusBadRequest, // Based on current handler logic
+			expectedStatusCode: http.StatusBadRequest,
 			expectedBody:       map[string]string{"error": "Invalid path structure for finalize endpoint"},
 		},
         {
 			name:               "Malformed path (no monthID)",
-			monthIDParam:       "", // Path will be /api/v1/months//finalize effectively
-			pathSuffix:         "/finalize", 
+			monthIDParam:       "",
+			pathSuffix:         "/finalize",
 			httpMethod:         http.MethodPut,
 			setupMock:          func(ms *MockStore) {},
-			expectedStatusCode: http.StatusBadRequest, 
+			expectedStatusCode: http.StatusBadRequest,
 			expectedBody:       map[string]string{"error": "Invalid path structure for finalize endpoint"},
 		},
 		{
 			name:         "Wrong HTTP method (GET)",
 			monthIDParam: "1",
 			pathSuffix:   "/finalize",
-			httpMethod:   http.MethodGet, // Wrong method
+			httpMethod:   http.MethodGet,
 			setupMock:    func(ms *MockStore) {},
 			expectedStatusCode: http.StatusMethodNotAllowed,
-			expectedBody:       "Method not allowed", // Handler writes this as plain text
+			expectedBody:       "Method not allowed",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Reset and setup mock for current test case
 			mockStore.CanFinalizeMonthFunc = nil
 			mockStore.GetBoardDataFunc = nil
 			mockStore.FinalizeMonthFunc = nil
 			tc.setupMock(mockStore)
 
 			path := fmt.Sprintf("/api/v1/months/%s%s", tc.monthIDParam, tc.pathSuffix)
-			req, err := http.NewRequest(tc.httpMethod, path, nil) // No body for PUT in this handler
+			req, err := http.NewRequest(tc.httpMethod, path, nil)
 			if err != nil {
 				t.Fatalf("Could not create request: %v", err)
 			}
@@ -191,14 +188,12 @@ func TestFinalizeMonthHandler(t *testing.T) {
 				t.Errorf("Expected status code %d, got %d. Body: %s", tc.expectedStatusCode, rr.Code, rr.Body.String())
 			}
 			
-			// Compare JSON bodies
 			if contentType := rr.Header().Get("Content-Type"); strings.Contains(contentType, "application/json") {
 				var actualBodyMap map[string]interface{}
 				if err := json.Unmarshal(rr.Body.Bytes(), &actualBodyMap); err != nil {
 					t.Fatalf("Could not unmarshal response body to map: %v. Body: %s", err, rr.Body.String())
 				}
 
-				// Marshal expectedBody if it's a map, to compare consistently (e.g. int vs float64 for numbers)
 				expectedBodyBytes, _ := json.Marshal(tc.expectedBody)
 				var expectedBodyMap map[string]interface{}
 				_ = json.Unmarshal(expectedBodyBytes, &expectedBodyMap)
@@ -206,21 +201,15 @@ func TestFinalizeMonthHandler(t *testing.T) {
 				if !reflect.DeepEqual(actualBodyMap, expectedBodyMap) {
 					t.Errorf("Expected JSON body %+v, got %+v", expectedBodyMap, actualBodyMap)
 				}
-			} else { // Plain text body (e.g., for MethodNotAllowed)
+			} else {
 				if expectedStr, ok := tc.expectedBody.(string); ok {
-					if strings.TrimSpace(rr.Body.String()) != expectedStr { // TrimSpace for potential newline by http.Error
+					if strings.TrimSpace(rr.Body.String()) != expectedStr {
 						t.Errorf("Expected body string '%s', got '%s'", expectedStr, rr.Body.String())
 					}
-				} else if rr.Body.Len() > 0 { // If there's a body but we didn't expect a string (e.g. tc.expectedBody was a map but CType wasn't JSON)
+				} else if rr.Body.Len() > 0 {
 					t.Errorf("Unexpected non-JSON body: %s", rr.Body.String())
 				}
 			}
 		})
 	}
 }
-
-// ptrToFloat64 defined in board_handlers_test.go, but if these files are in different
-// packages for testing (they are not, both `package http`), it would need to be redefined
-// or moved to a shared test utility. For now, it's fine as they are in the same package.
-// func ptrToFloat64(v float64) *float64 { return &v }
-// func ptrToInt64(v int64) *int64 { return &v }
