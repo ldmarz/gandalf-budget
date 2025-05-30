@@ -7,13 +7,23 @@ export default defineConfig({
   build: {
     outDir: 'dist'
   },
-  server: { // Add this server configuration
+  server: {
     proxy: {
-      '/api': { // Proxy requests that start with /api
-        target: 'http://localhost:8080', // Your Go backend address
-        changeOrigin: true, // Necessary for virtual hosted sites
-        // secure: false, // Uncomment if your backend is not HTTPS
-        // No rewrite rule for now, assuming backend expects /api/...
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('vite proxy error:', err.message); // Log error message
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Shorten the log by not logging the full proxyReq object itself
+            console.log('vite proxy: Sending Request to Target:', req.method, req.url, '->', proxyReq.protocol + '//' + proxyReq.host + proxyReq.path);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('vite proxy: Received Response from Target:', proxyRes.statusCode, req.url);
+          });
+        }
       }
     }
   }
