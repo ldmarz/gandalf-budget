@@ -277,5 +277,52 @@ Beyond the core principles above, the following practices are essential for a hi
     - [ ] Deleting a category with attached budget lines: implement reassign or cascade delete confirmation (currently simple delete).
 - [ ] UI/Brand System: Review and ensure adherence to color tokens, wireframes (as per PRD).
 
+## Milestone 7: Core Frontend Navigation Setup
+- Goal: Implement a functional navigation system and basic routing.
+- Tasks:
+    - [ ] Verify `react-router-dom` installation (currently `^7.6.1`) in `web/package.json`.
+    - [ ] Create a primary navigation component (e.g., `Navbar.tsx` in `web/src/components/layout/`) displaying links for: Dashboard, Board, Report, Manage, and Backup.
+    - [ ] Modify `web/src/App.tsx` to include the `Navbar` and set up `react-router-dom` `Routes` (importing `Routes`, `Route`, `Link`) for each page component currently in `web/src/pages/` (Dashboard, Board, Report, Manage, Backup).
+    - [ ] Ensure basic navigation allows switching between these existing pages.
+    - [ ] Style the `Navbar` minimally using Tailwind CSS for initial usability.
+
+## Milestone 8: Tailwind CSS Integration and Basic Styling Pass
+- Goal: Ensure Tailwind CSS is correctly configured and apply foundational styling.
+- Tasks:
+    - [ ] Verify Tailwind CSS configuration is active (check `tailwind.config.js`, `postcss.config.js`, and main CSS import in `web/src/index.css` or `web/src/main.tsx`).
+    - [ ] Perform an initial styling pass on all existing pages (`Dashboard.tsx`, `Board.tsx`, `Report.tsx`, `Manage.tsx`, `Backup.tsx`) using Tailwind utility classes to improve readability and layout (typography, spacing, containers).
+    - [ ] Ensure UI elements like buttons and inputs have consistent basic styling with Tailwind.
+
+## Milestone 9: Shadcn UI Component Adoption
+- Goal: Enhance UI consistency and interactivity by adopting Shadcn UI components across all pages.
+- General Tasks:
+    - [ ] Verify Shadcn UI is installed and `web/src/components/ui/` contains a comprehensive set of base components.
+    - [ ] For each page, identify standard HTML elements or basic components that can be replaced with more robust Shadcn UI equivalents.
+    - [ ] If a suitable Shadcn component does not exist in `web/src/components/ui/` for a required element, implement a new reusable component adhering to Shadcn principles and styled with Tailwind CSS. Place new general-purpose UI components in `web/src/components/ui/` or page-specific components in `web/src/components/web/` (or a relevant page-specific component folder).
+    - [ ] Style Shadcn components using their props and Tailwind utility classes as needed to fit the application's design.
+- Page-Specific Tasks:
+    - [ ] **Dashboard.tsx (`/src/pages/Dashboard.tsx`)**:
+        - [ ] Review and refactor using Shadcn components (e.g., `Card` for sections, `Table` for data display if any, `Button` for actions).
+    - [ ] **Board.tsx (`/src/pages/Board.tsx`)**:
+        - [ ] Review and refactor using Shadcn components (e.g., `Card` for overall layout, `Table` for budget lines, `Input` for amounts, `Button` for actions like "Finalize Month").
+    - [ ] **Report.tsx (`/src/pages/Report.tsx`)**:
+        - [ ] Review and refactor using Shadcn components (e.g., `Select` for year choice, `Table` for snapshot list, `Button` for "View").
+    - [ ] **Manage.tsx (`/src/pages/Manage.tsx`)**:
+        - [ ] Review and refactor using Shadcn components (e.g., `Card` for sections, `Table` for categories/budget lines, `Dialog` or `Modal` for add/edit forms, `Input`, `Button`, `Select` for form elements).
+    - [ ] **Backup.tsx (`/src/pages/Backup.tsx`)**:
+        - [ ] Review and refactor using Shadcn components (e.g., `Button` for "Export JSON", `Alert` or text display for "Last backup").
+
+## Milestone 10: Frontend Interaction and UX Refinements
+- Goal: Improve user experience with better visual feedback and interactive elements.
+- Tasks:
+    - [ ] Add loading states (e.g., using `LoadingSpinner` from `web/src/components/ui/LoadingSpinner.tsx` or a similar Shadcn component) for data fetching operations in pages like `Board.tsx` or `Dashboard.tsx`.
+    - [ ] Implement user feedback messages (e.g., success/error notifications using Shadcn `Alert` or by creating a toast-like system) for actions like saving data or encountering errors.
+    - [ ] Review application for areas where UI can be made more intuitive (e.g., clearer calls to action, better visual hierarchy, consistent placement of controls).
+
+## Milestone 11: Frontend Testing for Navigation and Key UI Components
+- Goal: Ensure reliability of navigation and critical UI elements.
+- Tasks:
+    - [ ] Write basic integration tests for the navigation system (e.g., using Vitest or React Testing Library to ensure clicking links in `Navbar.tsx` loads the correct page component).
+    - [ ] Write unit tests for any new complex custom components or critical Shadcn component implementations that encapsulate specific application logic.
 ```
 This detailed checklist should help track progress.
