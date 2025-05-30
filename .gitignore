@@ -13,3 +13,4 @@ Thumbs.db
 .idea/
 .vscode/
 budget.db
+/cmd/server/embedded_web_dist/*
