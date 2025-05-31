@@ -114,7 +114,7 @@ export default function BoardPage() {
         <div>
           <Button
             onClick={handleFinalizeMonth}
-            disabled={isFinalizing || isLoading || boardLines.length === 0}
+            disabled={isFinalizing || isLoading || !boardData?.budget_lines || boardData.budget_lines.length === 0}
             className="text-sm bg-green-600 hover:bg-green-700"
           >
             {isFinalizing ? 'Finalizing...' : 'Finalize Current Month'}
@@ -127,14 +127,14 @@ export default function BoardPage() {
 
       {isLoading && <LoadingSpinner text="Loading board data..." />}
 
-      {!isLoading && !error && boardLines.length === 0 && (
+      {!isLoading && !error && (!boardData?.budget_lines || boardData.budget_lines.length === 0) && (
         <Card className="text-center">
           <p className={textMutedClasses}>No budget lines found for Month ID: {currentMonthId}.</p>
           <p className={textMutedClasses}>You can add budget lines in the 'Manage' page for this month if it's not finalized.</p>
         </Card>
       )}
 
-      {!isLoading && boardLines.length > 0 && (
+      {!isLoading && boardData?.budget_lines && boardData.budget_lines.length > 0 && (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-700">
             <thead className="bg-gray-700">
@@ -146,7 +146,7 @@ export default function BoardPage() {
               </tr>
             </thead>
             <tbody className="bg-gray-800 divide-y divide-gray-700">
-              {boardLines.map(line => (
+              {boardData?.budget_lines.map(line => (
                 <tr key={line.id} className={`${getRowColor(line)} transition-colors duration-150`}>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <CategoryBadge category={{ name: line.category_name, color: line.category_color || 'bg-gray-500' }} />
@@ -158,7 +158,7 @@ export default function BoardPage() {
                       type="number"
                       defaultValue={Number(line.actual_amount) || 0}
                       onBlur={(e: ChangeEvent<HTMLInputElement>) => 
-                        handleActualAmountChange(line.id, line.actual_id, e.target.value)
+                        handleActualAmountChange(line.id, e.target.value)
                       }
                       className="!text-black w-full text-sm"
                       placeholder="0"
