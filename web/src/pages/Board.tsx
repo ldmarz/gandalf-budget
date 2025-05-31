@@ -89,7 +89,7 @@ export default function BoardPage() {
     // Optimistic UI update
     setBudgetLines(prevLines =>
       prevLines.map(line =>
-        line.id === budgetLineId ? { ...line, actual_amount: newActual, actual_id: actualId || line.actual_id } : line
+        line.id === budgetLineId ? { ...line, actual_amount: newActual, actual_id: actualId || line.id } : line
       )
     );
 
@@ -145,11 +145,11 @@ export default function BoardPage() {
           </div>
           <Button
             onClick={handleFinalizeMonth}
-            disabled={isFinalizing || isLoading || budgetLines.length === 0 || boardData?.is_finalized}
+            disabled={isFinalizing || isLoading || budgetLines.length === 0 }
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm disabled:opacity-50 w-full sm:w-auto"
           >
             {isFinalizing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isFinalizing ? 'Finalizing...' : (boardData?.is_finalized ? 'Month Finalized' : 'Finalize Current Month')}
+            {isFinalizing ? 'Finalizing...' : (boardData ? 'Month Finalized' : 'Finalize Current Month')}
           </Button>
         </CardContent>
       </Card>
@@ -208,7 +208,7 @@ export default function BoardPage() {
                     <CategoryBadge category={{ name: line.category_name, color: line.category_color || 'gray' }} />
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{line.label}</TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-right">{formatCurrency(line.expected)}</TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-right">{formatCurrency(line.expected_amount)}</TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <Input
                       type="number"

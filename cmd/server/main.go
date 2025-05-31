@@ -13,7 +13,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-//go:embed all:embedded_web_dist
 var staticFiles embed.FS
 
 func main() {
@@ -32,7 +31,6 @@ func main() {
 	if err := app.SeedInitialMonth(db); err != nil {
 		log.Fatalf("Failed to seed initial data: %v", err)
 	}
-
 
 	log.Println("Setting up router...")
 	distFS, err := fs.Sub(staticFiles, "embedded_web_dist")
