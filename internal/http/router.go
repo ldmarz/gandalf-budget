@@ -25,7 +25,7 @@ func NewRouter(staticFS fs.FS, db *sqlx.DB) *http.ServeMux {
 	})
 
 	mux.HandleFunc("/api/v1/dashboard", GetDashboardData(appStore))
-
+	mux.HandleFunc("/api/v1/export/json", ExportJSONHandler(appStore)) // New route
 	mux.HandleFunc("/api/v1/reports/annual", GetAnnualReport(appStore))
 
 	mux.HandleFunc("/api/v1/reports/snapshots/", GetSnapshotDetail(appStore))
@@ -152,6 +152,7 @@ func isKnownAPIPath(path string) bool {
 		"/api/v1/budget-lines",
 		"/api/v1/actual-lines/",
 		"/api/v1/months/",
+		"/api/v1/export/json", // Add this line
 	}
 	for _, prefix := range knownAPIPrefixes {
 		if strings.HasPrefix(path, prefix) {
