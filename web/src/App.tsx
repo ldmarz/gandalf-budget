@@ -10,7 +10,7 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar />
-      <main className="p-4 text-red-500">
+      <main className="p-4">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/board" element={<Board />} />

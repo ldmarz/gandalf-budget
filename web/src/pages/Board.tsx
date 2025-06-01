@@ -1,24 +1,16 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import * as api from '../lib/api';
-// import { textMutedClasses } from '../styles/commonClasses'; // Assuming this will be replaced by Tailwind
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card'; // Assuming these are Tailwind-styled
-import { Button } from '../components/ui/Button'; // Assuming Tailwind-styled
-import { Input } from '../components/ui/Input'; // Assuming Tailwind-styled
-import { Loader2 } from 'lucide-react'; // For a spinner icon
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/Alert'; // Assuming Tailwind-styled
-import { CategoryBadge } from '../components/CategoryBadge'; // Assuming Tailwind-styled
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'; // Assuming Tailwind-styled
-import { formatCurrency } from '../lib/utils'; // For currency formatting
+import { textMutedClasses } from '../styles/commonClasses';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import MessageDisplay from '../components/ui/MessageDisplay';
+import CategoryBadge from '../components/CategoryBadge';
 
 export default function BoardPage() {
   const [boardData, setBoardData] = useState<api.BoardDataPayload | null>(null);
-  // Ensure budget_lines is part of BoardDataPayload or adjust type
-  const [budgetLines, setBudgetLines] = useState<api.BudgetLineWithActual[]>([]);
-  const [currentMonthId, setCurrentMonthId] = useState<number>(() => {
-    // You might want to get this from URL params or a global state
-    const params = new URLSearchParams(window.location.search);
-    return parseInt(params.get('month_id') || '1', 10);
-  });
+  const [currentMonthId, setCurrentMonthId] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -31,11 +23,9 @@ export default function BoardPage() {
     try {
       const data = await api.getBoardData(monthId);
       setBoardData(data);
-      setBudgetLines(data.budget_lines || []); // Ensure budget_lines are set
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch board data');
       setBoardData(null);
-      setBudgetLines([]);
     } finally {
       setIsLoading(false);
     }
@@ -43,10 +33,6 @@ export default function BoardPage() {
 
   useEffect(() => {
     fetchBoardData(currentMonthId);
-    // Update URL search param when monthId changes
-    const newSearch = new URLSearchParams(window.location.search);
-    newSearch.set('month_id', currentMonthId.toString());
-    window.history.replaceState({}, '', `${window.location.pathname}?${newSearch}`);
   }, [currentMonthId]);
 
   const handleFinalizeMonth = async () => {
@@ -60,9 +46,7 @@ export default function BoardPage() {
     try {
       const response = await api.finalizeMonth(currentMonthId);
       setFinalizeMessage(response.message || "Month finalized successfully!");
-      // Navigate to the new month or refresh data for the new month
       setCurrentMonthId(response.new_month_id);
-      fetchBoardData(response.new_month_id); // fetch data for new month
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to finalize month. Check if all actuals are set or an error occurred.";
       setError(errorMessage);
@@ -73,161 +57,124 @@ export default function BoardPage() {
 
   const handleActualAmountChange = async (
     budgetLineId: number,
-    actualId: number | null, // actual_id can be null if not yet set
     newActualString: string
   ) => {
     const newActual = parseFloat(newActualString);
     if (isNaN(newActual) || newActual < 0) {
-      // Show a more user-friendly error, perhaps using a toast or inline message
-      setError("Please enter a valid positive number for the actual amount.");
-      // Re-fetch to revert optimistic update or show correct state
+      alert("Please enter a valid positive number for the actual amount.");
       fetchBoardData(currentMonthId);
       return;
     }
-    setError(null); // Clear previous error
 
-    // Optimistic UI update
-    setBudgetLines(prevLines =>
-      prevLines.map(line =>
-        line.id === budgetLineId ? { ...line, actual_amount: newActual, actual_id: actualId || line.id } : line
-      )
-    );
+    if (boardData) {
+      setBoardData({
+        ...boardData,
+        budget_lines: boardData.budget_lines.map(line =>
+          line.id === budgetLineId ? { ...line, actual_amount: newActual } : line
+        ),
+      });
+    }
 
     try {
-      // If actual_id exists, it's an update, otherwise it's a create.
-      // The backend API needs to handle this logic, or you need separate API calls.
-      // Assuming `updateActualLine` can handle create/update based on `actual_id` or `budget_line_id`.
-      // This might need adjustment based on your actual API capabilities.
-      // For simplicity, let's assume `updateActualLine` handles this.
-      // If it doesn't, you'd need a `createActualLine` and `updateActualLine`.
       await api.updateActualLine(budgetLineId, { actual: newActual });
     } catch (err) {
+      alert(`Failed to update actual amount: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setError(err instanceof Error ? `Failed to update: ${err.message}` : 'Failed to update actual amount.');
-      // Revert optimistic update on error
       fetchBoardData(currentMonthId);
     }
   };
 
-  if (isLoading && !boardData && !error) {
-    return (
-      <div className="flex flex-col justify-center items-center h-screen bg-gray-100 p-4 text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
-        <p className="text-xl text-gray-700">Loading board data...</p>
-      </div>
-    );
-  }
+  const getRowColor = (line: api.BudgetLineWithActual): string => {
+    if (line.actual_amount && Number(line.actual_amount) > 0) {
+      return 'bg-green-700 hover:bg-green-600';
+    }
+    return 'bg-yellow-700 hover:bg-yellow-600';
+  };
+
+  if (isLoading && !boardData) return <LoadingSpinner text="Loading board data..." />;
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen space-y-6">
-      <header className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Monthly Budget Board
-        </h1>
-        {boardData && (
-          <p className="text-xl text-gray-600">{boardData.month_name} {boardData.year}</p>
-        )}
-      </header>
+    <div className="p-4 bg-gray-900 min-h-screen text-white">
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        Monthly Budget Board: {boardData ? `${boardData.month_name} ${boardData.year}` : `Month ID ${currentMonthId}`}
+      </h1>
+      {boardData?.is_finalized && (
+        <p className="text-center text-yellow-500 mb-4">(This month is finalized and read-only)</p>
+      )}
 
-      <Card className="shadow-lg">
-        <CardContent className="p-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <div className="flex items-center space-x-3">
-            <label htmlFor="month_id_selector_board" className="text-sm font-medium text-gray-700">
-              Select Month ID:
-            </label>
-            <Input
-              id="month_id_selector_board"
-              type="number"
-              value={currentMonthId}
-              onChange={(e) => setCurrentMonthId(parseInt(e.target.value, 10) || 1)}
-              className="w-24 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              min="1"
-            />
-          </div>
+      <Card className="mb-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+        <div className="flex items-center space-x-2">
+          <label htmlFor="month_id_selector_board" className="block text-sm font-medium">Select Month ID:</label>
+          <Input
+            id="month_id_selector_board"
+            type="number"
+            value={currentMonthId}
+            onChange={(e) => setCurrentMonthId(parseInt(e.target.value, 10) || 1)}
+            className="w-24 !text-black text-sm"
+            min="1"
+          />
+        </div>
+        <div>
           <Button
             onClick={handleFinalizeMonth}
-            disabled={isFinalizing || isLoading || budgetLines.length === 0 }
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm disabled:opacity-50 w-full sm:w-auto"
+            disabled={isFinalizing || isLoading || !boardData?.budget_lines || boardData.budget_lines.length === 0 || boardData?.is_finalized}
+            className={`text-sm ${boardData?.is_finalized ? 'bg-gray-500' : 'bg-green-600 hover:bg-green-700'}`}
           >
-            {isFinalizing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isFinalizing ? 'Finalizing...' : (boardData ? 'Month Finalized' : 'Finalize Current Month')}
+            {boardData?.is_finalized ? 'Month Finalized' : (isFinalizing ? 'Finalizing...' : 'Finalize Current Month')}
           </Button>
-        </CardContent>
+        </div>
       </Card>
 
-      {error && (
-        <Alert variant="destructive" className="max-w-xl mx-auto">
-          <AlertTitle className="font-semibold">Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {finalizeMessage && (
-         <Alert variant={error ? "destructive" : "default"} className={`max-w-xl mx-auto ${error ? 'bg-red-50 border-red-500 text-red-700' : 'bg-green-50 border-green-500 text-green-700'}`}>
-          <AlertTitle className="font-semibold">{error ? 'Finalization Failed' : 'Success'}</AlertTitle>
-          <AlertDescription>{finalizeMessage}</AlertDescription>
-        </Alert>
-      )}
+      <MessageDisplay message={error} type="error" className="my-4 text-center" />
+      <MessageDisplay message={finalizeMessage} type={error ? 'error' : 'success'} className="my-4 text-center" />
 
-      {isLoading && budgetLines.length > 0 && ( // Show spinner overlay if loading more data
-        <div className="fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
-             <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
-        </div>
-      )}
+      {isLoading && <LoadingSpinner text="Loading board data..." />}
 
-
-      {!isLoading && budgetLines.length === 0 && !error && (
-        <Card className="shadow-md">
-          <CardContent className="p-6 text-center">
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No Budget Lines Found</h3>
-            <p className="text-gray-500">
-              No budget lines found for Month ID: {currentMonthId}.
-            </p>
-            {!boardData?.is_finalized && (
-                <p className="text-sm text-gray-500 mt-1">
-                You can add budget lines on the 'Manage' page.
-                </p>
-            )}
-          </CardContent>
+      {!isLoading && !error && (!boardData?.budget_lines || boardData.budget_lines.length === 0) && (
+        <Card className="text-center">
+          <p className={textMutedClasses}>No budget lines found for Month ID: {currentMonthId}.</p>
+          <p className={textMutedClasses}>You can add budget lines in the 'Manage' page for this month if it's not finalized.</p>
         </Card>
       )}
 
-      {!isLoading && budgetLines.length > 0 && (
-        <Card className="shadow-lg overflow-hidden">
-          <Table>
-            <TableHeader className="bg-gray-200 ">
-              <TableRow>
-                <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Category</TableHead>
-                <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Budget Line Item</TableHead>
-                <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Expected</TableHead>
-                <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actual</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="bg-white divide-y divide-gray-200">
-              {budgetLines.map(line => (
-                <TableRow key={line.id} className={`hover:bg-gray-50 ${line.actual_amount && Number(line.actual_amount) > 0 ? 'bg-green-50' : 'bg-yellow-50'}`}>
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <CategoryBadge category={{ name: line.category_name, color: line.category_color || 'gray' }} />
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{line.label}</TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-right">{formatCurrency(line.expected_amount)}</TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
+      {!isLoading && boardData?.budget_lines && boardData.budget_lines.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-700">
+            <thead className="bg-gray-700">
+              <tr>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Category</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Budget Line Item</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Expected (CLP)</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actual (CLP)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-gray-800 divide-y divide-gray-700">
+              {boardData?.budget_lines.map(line => (
+                <tr key={line.id} className={`${getRowColor(line)} transition-colors duration-150`}>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <CategoryBadge category={{ id: line.category_id, name: line.category_name, color: line.category_color || 'bg-gray-500' }} />
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">{line.label}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-right">{Number(line.expected_amount).toFixed(0)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <Input
                       type="number"
-                      defaultValue={Number(line.actual_amount) || ''}
+                      defaultValue={Number(line.actual_amount) || 0}
                       onBlur={(e: ChangeEvent<HTMLInputElement>) => 
-                        handleActualAmountChange(line.id, line.actual_id, e.target.value)
+                        handleActualAmountChange(line.id, e.target.value)
                       }
-                      className="border-gray-300 rounded-md shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm w-full disabled:bg-gray-100"
-                      placeholder="0.00"
+                      className="!text-black w-full text-sm"
+                      placeholder="0"
                       min="0"
-                      step="0.01"
-                      disabled={boardData?.is_finalized || isFinalizing}
+                      step="1"
+                      disabled={boardData?.is_finalized}
                     />
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </Card>
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
