@@ -9,10 +9,11 @@ import (
 
 func (s *sqlStore) GetBoardData(monthID int) (*BoardDataPayload, error) {
 	var monthDetails struct {
-		Year  int `db:"year"`
-		Month int `db:"month"`
+		Year      int  `db:"year"`
+		Month     int  `db:"month"`
+		Finalized bool `db:"finalized"`
 	}
-	monthQuery := `SELECT year, month FROM months WHERE id = ?;`
+	monthQuery := `SELECT year, month, finalized FROM months WHERE id = ?;`
 	err := s.DB.Get(&monthDetails, monthQuery, monthID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -65,6 +66,7 @@ func (s *sqlStore) GetBoardData(monthID int) (*BoardDataPayload, error) {
 		Year:        monthDetails.Year,
 		MonthName:   monthName,
 		BudgetLines: budgetLinesWithActuals,
+		IsFinalized: monthDetails.Finalized,
 	}
 
 	return payload, nil

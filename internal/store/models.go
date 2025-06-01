@@ -62,4 +62,5 @@ type BoardDataPayload struct {
 	Year        int                    `json:"year"`
 	MonthName   string                 `json:"month_name"`
 	BudgetLines []BudgetLineWithActual `json:"budget_lines"`
+	IsFinalized bool                   `json:"is_finalized"` // New field
 }

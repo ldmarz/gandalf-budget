@@ -128,6 +128,7 @@ export interface BoardDataPayload {
   year: number;
   month_name: string;
   budget_lines: BudgetLineWithActual[];
+  is_finalized: boolean; // New field
 }
 
 export async function getBoardData(monthId: string | number): Promise<BoardDataPayload> {
