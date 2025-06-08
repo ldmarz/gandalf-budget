@@ -33,7 +33,6 @@ func main() {
 		log.Fatalf("Failed to seed initial data: %v", err)
 	}
 
-
 	log.Println("Setting up router...")
 	distFS, err := fs.Sub(staticFiles, "embedded_web_dist")
 	if err != nil {

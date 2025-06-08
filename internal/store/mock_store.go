@@ -19,7 +19,7 @@ type ReusableMockStore struct {
 	MockGetActualLineByID       func(id int64) (*ActualLine, error)
 	MockGetBudgetLineByID       func(id int64) (*BudgetLine, error)
 
-	MockGetBoardData func(monthID int) ([]BudgetLine, error)
+	MockGetBoardData func(monthID int) (*BoardDataPayload, error)
 
 	MockCanFinalizeMonth func(monthID int) (bool, string, error)
 	MockFinalizeMonth    func(monthID int, snapJSON string) (int64, error)
@@ -112,7 +112,7 @@ func (m *ReusableMockStore) GetBudgetLineByID(id int64) (*BudgetLine, error) {
 	return nil, errors.New("ReusableMockStore: MockGetBudgetLineByID not implemented")
 }
 
-func (m *ReusableMockStore) GetBoardData(monthID int) ([]BudgetLine, error) {
+func (m *ReusableMockStore) GetBoardData(monthID int) (*BoardDataPayload, error) {
 	if m.MockGetBoardData != nil {
 		return m.MockGetBoardData(monthID)
 	}

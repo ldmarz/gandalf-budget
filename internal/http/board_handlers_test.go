@@ -9,60 +9,78 @@ import (
 	"reflect"
 	"testing"
 
-	"gandalf-budget/internal/store" // For store.BudgetLine
+	"gandalf-budget/internal/store" // For store types
 )
 
 func TestGetBoardDataHandler(t *testing.T) {
-	mockStore := &MockStore{}
+	mockStore := &store.ReusableMockStore{}
 
 	tests := []struct {
 		name               string
 		monthIDParam       string
-		setupMock          func(ms *MockStore)
+		setupMock          func(ms *store.ReusableMockStore)
 		expectedStatusCode int
 		expectedBody       interface{}
 	}{
 		{
 			name:         "Successful fetch",
 			monthIDParam: "1",
-			setupMock: func(ms *MockStore) {
-				ms.GetBoardDataFunc = func(monthID int) ([]store.BudgetLine, error) {
+			setupMock: func(ms *store.ReusableMockStore) {
+				ms.MockGetBoardData = func(monthID int) (*store.BoardDataPayload, error) {
 					if monthID != 1 {
 						return nil, fmt.Errorf("unexpected monthID: %d", monthID)
 					}
-					id1, amount1 := int64(101), float64(50.0)
-					id2, amount2 := int64(102), float64(75.0)
-					return []store.BudgetLine{
-						{ID: 1, MonthID: 1, CategoryID: 1, Label: "Line 1", Expected: 100.0, ActualID: &id1, ActualAmount: &amount1},
-						{ID: 2, MonthID: 1, CategoryID: 2, Label: "Line 2", Expected: 150.0, ActualID: &id2, ActualAmount: &amount2},
+					return &store.BoardDataPayload{
+						MonthID:   1,
+						Year:      2024,
+						MonthName: "January",
+						BudgetLines: []store.BudgetLineWithActual{
+							{ID: 1, MonthID: 1, CategoryID: 1, CategoryName: "Food", CategoryColor: "", Label: "Line 1", ExpectedAmount: 100.0, ActualAmount: 50.0},
+							{ID: 2, MonthID: 1, CategoryID: 2, CategoryName: "Rent", CategoryColor: "", Label: "Line 2", ExpectedAmount: 150.0, ActualAmount: 75.0},
+						},
 					}, nil
 				}
 			},
 			expectedStatusCode: http.StatusOK,
-			expectedBody: []store.BudgetLine{
-				{ID: 1, MonthID: 1, CategoryID: 1, Label: "Line 1", Expected: 100.0, ActualID: ptrToInt64(101), ActualAmount: ptrToFloat64(50.0)},
-				{ID: 2, MonthID: 1, CategoryID: 2, Label: "Line 2", Expected: 150.0, ActualID: ptrToInt64(102), ActualAmount: ptrToFloat64(75.0)},
+			expectedBody: &store.BoardDataPayload{
+				MonthID:   1,
+				Year:      2024,
+				MonthName: "January",
+				BudgetLines: []store.BudgetLineWithActual{
+					{ID: 1, MonthID: 1, CategoryID: 1, CategoryName: "Food", CategoryColor: "", Label: "Line 1", ExpectedAmount: 100.0, ActualAmount: 50.0},
+					{ID: 2, MonthID: 1, CategoryID: 2, CategoryName: "Rent", CategoryColor: "", Label: "Line 2", ExpectedAmount: 150.0, ActualAmount: 75.0},
+				},
 			},
 		},
 		{
 			name:         "Empty board data",
 			monthIDParam: "2",
-			setupMock: func(ms *MockStore) {
-				ms.GetBoardDataFunc = func(monthID int) ([]store.BudgetLine, error) {
+			setupMock: func(ms *store.ReusableMockStore) {
+				ms.MockGetBoardData = func(monthID int) (*store.BoardDataPayload, error) {
 					if monthID != 2 {
 						return nil, fmt.Errorf("unexpected monthID: %d", monthID)
 					}
-					return []store.BudgetLine{}, nil
+					return &store.BoardDataPayload{
+						MonthID:     2,
+						Year:        2024,
+						MonthName:   "January",
+						BudgetLines: []store.BudgetLineWithActual{},
+					}, nil
 				}
 			},
 			expectedStatusCode: http.StatusOK,
-			expectedBody:       []store.BudgetLine{},
+			expectedBody: &store.BoardDataPayload{
+				MonthID:     2,
+				Year:        2024,
+				MonthName:   "January",
+				BudgetLines: []store.BudgetLineWithActual{},
+			},
 		},
 		{
 			name:         "Store error on GetBoardData",
 			monthIDParam: "3",
-			setupMock: func(ms *MockStore) {
-				ms.GetBoardDataFunc = func(monthID int) ([]store.BudgetLine, error) {
+			setupMock: func(ms *store.ReusableMockStore) {
+				ms.MockGetBoardData = func(monthID int) (*store.BoardDataPayload, error) {
 					return nil, errors.New("database is down")
 				}
 			},
@@ -72,14 +90,14 @@ func TestGetBoardDataHandler(t *testing.T) {
 		{
 			name:               "Invalid monthId in path (non-integer)",
 			monthIDParam:       "abc",
-			setupMock:          func(ms *MockStore) {},
+			setupMock:          func(ms *store.ReusableMockStore) {},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedBody:       map[string]string{"error": "Invalid Month ID format"},
 		},
 		{
 			name:               "Missing monthId in path",
 			monthIDParam:       "",
-			setupMock:          func(ms *MockStore) {},
+			setupMock:          func(ms *store.ReusableMockStore) {},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedBody:       map[string]string{"error": "Month ID is required"},
 		},
@@ -104,14 +122,11 @@ func TestGetBoardDataHandler(t *testing.T) {
 			}
 
 			if tc.expectedStatusCode == http.StatusOK {
-				var actualBody []store.BudgetLine
+				var actualBody store.BoardDataPayload
 				if err := json.Unmarshal(rr.Body.Bytes(), &actualBody); err != nil {
-					if reflect.DeepEqual(tc.expectedBody, []store.BudgetLine{}) && rr.Body.String() == "[]" {
-					} else {
-						t.Fatalf("Could not unmarshal response body for OK status: %v. Body: %s", err, rr.Body.String())
-					}
+					t.Fatalf("Could not unmarshal response body for OK status: %v. Body: %s", err, rr.Body.String())
 				}
-				if !reflect.DeepEqual(actualBody, tc.expectedBody) {
+				if !reflect.DeepEqual(&actualBody, tc.expectedBody) {
 					expectedJSON, _ := json.Marshal(tc.expectedBody)
 					t.Errorf("Expected body %s, got %s", string(expectedJSON), rr.Body.String())
 				}
