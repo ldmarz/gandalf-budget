@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { getAnnualSnapshots, getSnapshotDetail, AnnualSnapMeta, DashboardPayload } from '../lib/api';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/Alert';
 import { Loader2 } from 'lucide-react';
 import ReadOnlyDashboardView from '../components/ReadOnlyDashboardView';
 
@@ -147,7 +147,7 @@ export default function ReportPage() {
                     <TableCell>{formatDate(snap.snap_created_at)}</TableCell>
                     <TableCell className="text-right">
                       <Button
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         onClick={() => handleViewSnapshot(snap.id)}
                         disabled={loadingDetail && selectedSnapId === snap.id}

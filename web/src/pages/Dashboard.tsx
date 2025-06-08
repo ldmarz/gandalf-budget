@@ -1,185 +1,220 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { getDashboardData, DashboardPayload, CategorySummary, BudgetLineDetail } from '../lib/api';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
+import { useState } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import SidebarLayout from '../components/layout/SidebarLayout';
+import { Avatar } from '../components/ui/Avatar';
+import { Button } from '../components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-import { CategoryBadge } from '../components/CategoryBadge';
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/Alert';
-import { Loader2 } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
+import { Search, Cog } from 'lucide-react';
+
+const lineData = [
+  { name: 'Jan', value: 1000 },
+  { name: 'Feb', value: 1200 },
+  { name: 'Mar', value: 1500 },
+  { name: 'Apr', value: 1700 },
+  { name: 'May', value: 1600 },
+  { name: 'Jun', value: 1800 },
+  { name: 'Jul', value: 1900 },
+  { name: 'Aug', value: 2000 },
+  { name: 'Sep', value: 2200 },
+  { name: 'Oct', value: 2300 },
+  { name: 'Nov', value: 2400 },
+  { name: 'Dec', value: 2500 },
+];
+
+const investmentData = [
+  { name: 'VOO', value: 30, color: '#86efac' },
+  { name: 'VTI', value: 25, color: '#60a5fa' },
+  { name: 'CLN', value: 20, color: '#fcd34d' },
+  { name: 'BTEX', value: 25, color: '#fda4af' },
+];
 
 export default function Dashboard() {
-  const [searchParams] = useSearchParams();
-  const monthId = searchParams.get('month_id');
-
-  const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!monthId) {
-      setError('Month ID is required. Please select a month.');
-      setLoading(false);
-      return;
-    }
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getDashboardData(monthId);
-        setDashboardData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-        console.error("Failed to fetch dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [monthId]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2 text-lg">Loading dashboard...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive" className="max-w-2xl mx-auto my-4">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!dashboardData) {
-    return (
-      <div className="text-center py-10">
-        <p>No dashboard data available for the selected month.</p>
-         {!monthId && <p>Please ensure a month is selected or a `month_id` is provided in the URL.</p>}
-      </div>
-    );
-  }
-
-  const {
-    month,
-    year,
-    total_expected,
-    total_actual,
-    total_difference,
-    category_summaries,
-  } = dashboardData;
+  const [range, setRange] = useState('Year');
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">Dashboard for {month} {year}</CardTitle>
-          <CardDescription>Overview of your budget and spending for the month.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-blue-50 dark:bg-blue-900">
+    <SidebarLayout>
+      <div className="flex items-start justify-between pb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Welcome back, John</h1>
+          <p className="text-sm text-gray-500">Here is an overview of your finances.</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Search className="w-5 h-5 text-gray-600" />
+          <Cog className="w-5 h-5 text-gray-600" />
+          <Avatar src="https://ui.shadcn.com/avatars/01.png" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Account Balance</CardTitle>
+            <div className="space-x-2">
+              {['Day', 'Week', 'Month', 'Year'].map((label) => (
+                <Button
+                  key={label}
+                  size="sm"
+                  variant={label === range ? 'primary' : 'secondary'}
+                  onClick={() => setRange(label)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={lineData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(v) => `${v / 1000}k`} domain={[0, 5000]} />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#3b82f6" dot />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <div className="space-y-4">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Total Expected</CardTitle>
+              <CardTitle className="text-right">Total Balance</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold">{formatCurrency(total_expected)}</p>
+            <CardContent className="text-right">
+              <p className="text-2xl font-semibold">$11,716.77</p>
+              <Badge variant="success">+3.5%</Badge>
             </CardContent>
           </Card>
-          <Card className="bg-green-50 dark:bg-green-900">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Total Actual</CardTitle>
+              <CardTitle className="text-right">Main Account</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold">{formatCurrency(total_actual)}</p>
+            <CardContent className="text-right">
+              <p className="text-2xl font-semibold">$4,500.00</p>
             </CardContent>
           </Card>
-          <Card className={total_difference >= 0 ? "bg-yellow-50 dark:bg-yellow-900" : "bg-red-50 dark:bg-red-900"}>
+          <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Total Difference</CardTitle>
+              <CardTitle className="text-right">Savings</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold">{formatCurrency(total_difference)}</p>
-              <Badge variant={total_difference >= 0 ? 'default' : 'destructive'} className="mt-1">
-                {total_difference >= 0 ? 'Under Budget' : 'Over Budget'}
+            <CardContent className="text-right">
+              <p className="text-2xl font-semibold">$7,216.77</p>
+              <Badge variant="outline" className="text-blue-600">
+                -1.1%
               </Badge>
             </CardContent>
           </Card>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {category_summaries.length === 0 && (
-        <Card>
-          <CardContent>
-            <p className="text-center py-4">No category summaries available for this month.</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {category_summaries.map((summary: CategorySummary) => (
-        <Card key={summary.category_id}>
-          <CardHeader className="flex flex-row justify-between items-center">
-            <div>
-              <CategoryBadge category={{ name: summary.category_name, color: summary.category_color, id: summary.category_id }} />
-              <CardDescription className="mt-1">
-                Summary for {summary.category_name}
-              </CardDescription>
-            </div>
-            <div className="text-right">
-                 <p className="text-sm text-muted-foreground">Difference</p>
-                 <p className={`text-lg font-semibold ${summary.difference >=0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(summary.difference)}
-                 </p>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-6">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Recent Transactions</CardTitle>
+            <a className="text-sm text-blue-600" href="#">
+              See all
+            </a>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                <p className="text-sm text-muted-foreground">Expected</p>
-                <p className="text-lg font-medium">{formatCurrency(summary.total_expected)}</p>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                <p className="text-sm text-muted-foreground">Actual</p>
-                <p className="text-lg font-medium">{formatCurrency(summary.total_actual)}</p>
-              </div>
-            </div>
-
-            {summary.budget_lines.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Budget Line Item</TableHead>
-                    <TableHead className="text-right">Expected</TableHead>
-                    <TableHead className="text-right">Actual</TableHead>
-                    <TableHead className="text-right">Difference</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {summary.budget_lines.map((line: BudgetLineDetail) => (
-                    <TableRow key={line.budget_line_id}>
-                      <TableCell>{line.label}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(line.expected_amount)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(line.actual_amount)}</TableCell>
-                      <TableCell className={`text-right font-medium ${line.difference >=0 ? 'text-green-700 dark:text-green-500' : 'text-red-700 dark:text-red-500'}`}>
-                        {formatCurrency(line.difference)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-3">No budget lines in this category.</p>
-            )}
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left">
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th className="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                <tr>
+                  <td className="flex items-center space-x-2">
+                    <Avatar className="w-6 h-6" src="https://ui.shadcn.com/avatars/02.png" />
+                    <span>Groceries</span>
+                  </td>
+                  <td>Today</td>
+                  <td>15:45</td>
+                  <td>
+                    <Badge variant="warning">Pending</Badge>
+                  </td>
+                  <td className="text-right text-red-600">-$54.33</td>
+                </tr>
+                <tr>
+                  <td className="flex items-center space-x-2">
+                    <Avatar className="w-6 h-6" src="https://ui.shadcn.com/avatars/03.png" />
+                    <span>Salary</span>
+                  </td>
+                  <td>11 Dec</td>
+                  <td>09:12</td>
+                  <td>
+                    <Badge variant="success">Completed</Badge>
+                  </td>
+                  <td className="text-right text-green-600">+$2,500.00</td>
+                </tr>
+                <tr>
+                  <td className="flex items-center space-x-2">
+                    <Avatar className="w-6 h-6" src="https://ui.shadcn.com/avatars/04.png" />
+                    <span>Utilities</span>
+                  </td>
+                  <td>10 Dec</td>
+                  <td>08:00</td>
+                  <td>
+                    <Badge variant="success">Completed</Badge>
+                  </td>
+                  <td className="text-right text-red-600">-$120.00</td>
+                </tr>
+              </tbody>
+            </table>
           </CardContent>
         </Card>
-      ))}
-    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Investments</CardTitle>
+            <CardDescription>
+              +$1,203.64 <span className="text-green-600">(+27.24%)</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  startAngle={180}
+                  endAngle={0}
+                  data={investmentData}
+                  dataKey="value"
+                  cx="50%"
+                  cy="100%"
+                  innerRadius={60}
+                  outerRadius={80}
+                >
+                  {investmentData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex justify-around text-xs mt-2">
+              {investmentData.map((d) => (
+                <div key={d.name} className="flex items-center space-x-1">
+                  <span className="w-3 h-3 inline-block" style={{ background: d.color }}></span>
+                  <span>{d.name}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </SidebarLayout>
   );
 }
