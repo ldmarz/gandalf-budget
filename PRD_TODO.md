@@ -8,7 +8,7 @@ A **single‑binary web app** to replace our family spreadsheet. Runs on one lap
 |------|------------|
 | Spreadsheet never opened after go‑live | ✅ |
 | Month‑end close ≤ 15 min | ✅ |
-| JSON export works for manual backup | ✅ |
+| JSON export works for manual backup | ❌ |
 
 ---
 ## 2. High‑Level Architecture
@@ -270,21 +270,21 @@ Beyond the core principles above, the following practices are essential for a hi
 ## Milestone 6: Backup & Miscellaneous
 - [ ] Backend: `GET /api/v1/export/json` endpoint - JSON backup download (pretty-printed gzip).
     - Consider what data to include (all tables or a specific selection).
-- [ ] Frontend: `Backup.tsx` - "Export JSON" button.
-- [ ] Frontend: Display "Last backup: X days ago" using localStorage (after successful export).
+- [x] Frontend: `Backup.tsx` - "Export JSON" button.
+- [x] Frontend: Display "Last backup: X days ago" using localStorage (after successful export).
 - [ ] Validation:
-    - [ ] Actual amounts must be ≥ 0, rounded to 2 decimals (backend validation).
+    - [x] Actual amounts must be ≥ 0, rounded to 2 decimals (backend validation).
     - [ ] Deleting a category with attached budget lines: implement reassign or cascade delete confirmation (currently simple delete).
 - [ ] UI/Brand System: Review and ensure adherence to color tokens, wireframes (as per PRD).
 
 ## Milestone 7: Core Frontend Navigation Setup
 - Goal: Implement a functional navigation system and basic routing.
 - Tasks:
-    - [ ] Verify `react-router-dom` installation (currently `^7.6.1`) in `web/package.json`.
-    - [ ] Create a primary navigation component (e.g., `Navbar.tsx` in `web/src/components/layout/`) displaying links for: Dashboard, Board, Report, Manage, and Backup.
-    - [ ] Modify `web/src/App.tsx` to include the `Navbar` and set up `react-router-dom` `Routes` (importing `Routes`, `Route`, `Link`) for each page component currently in `web/src/pages/` (Dashboard, Board, Report, Manage, Backup).
-    - [ ] Ensure basic navigation allows switching between these existing pages.
-    - [ ] Style the `Navbar` minimally using Tailwind CSS for initial usability.
+    - [x] Verify `react-router-dom` installation (currently `^7.6.1`) in `web/package.json`.
+    - [x] Create a primary navigation component (e.g., `Navbar.tsx` in `web/src/components/layout/`) displaying links for: Dashboard, Board, Report, Manage, and Backup.
+    - [x] Modify `web/src/App.tsx` to include the `Navbar` and set up `react-router-dom` `Routes` (importing `Routes`, `Route`, `Link`) for each page component currently in `web/src/pages/` (Dashboard, Board, Report, Manage, Backup).
+    - [x] Ensure basic navigation allows switching between these existing pages.
+    - [x] Style the `Navbar` minimally using Tailwind CSS for initial usability.
 
 ## Milestone 8: Tailwind CSS Integration and Basic Styling Pass
 - Goal: Ensure Tailwind CSS is correctly configured and apply foundational styling.
