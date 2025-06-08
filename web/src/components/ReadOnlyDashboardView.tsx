@@ -1,7 +1,7 @@
 import { DashboardPayload, CategorySummary, BudgetLineDetail } from '../lib/api';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table';
+import { Badge } from './ui/Badge';
 import { CategoryBadge } from './CategoryBadge';
 import { formatCurrency } from '../lib/utils';
 

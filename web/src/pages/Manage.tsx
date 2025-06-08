@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { get, post, put, del } from '../lib/api'; // Adjust path as necessary
+import * as api from '../lib/api'; // Adjust path as necessary
 import { textMutedClasses } from '../styles/commonClasses'; // Removed inputClasses, buttonClasses, destructiveButtonClasses
 import Card from '../components/ui/Card'; // Import Card component
 import Button from '../components/ui/Button'; // Import Button component
@@ -15,6 +15,11 @@ interface Category {
   color: string;
 }
 
+interface BudgetLineWithCategory extends api.BudgetLine {
+  category_name: string;
+  category_color: string;
+}
+
 export default function ManagePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,13 +30,13 @@ export default function ManagePage() {
   const [formName, setFormName] = useState<string>('');
   const [formColor, setFormColor] = useState<string>('');
 
-  const [budgetLines, setBudgetLines] = useState<api.BudgetLine[]>([]);
+  const [budgetLines, setBudgetLines] = useState<BudgetLineWithCategory[]>([]);
   const [currentMonthId, setCurrentMonthId] = useState<number>(1);
   const [isLoadingBL, setIsLoadingBL] = useState(true);
   const [errorBL, setErrorBL] = useState<string | null>(null);
 
   const [isEditingBL, setIsEditingBL] = useState<boolean>(false);
-  const [currentBL, setCurrentBL] = useState<api.BudgetLine | null>(null);
+  const [currentBL, setCurrentBL] = useState<BudgetLineWithCategory | null>(null);
   const [formBLLabel, setFormBLLabel] = useState<string>('');
   const [formBLExpected, setFormBLExpected] = useState<string>('');
   const [formBLCategoryID, setFormBLCategoryID] = useState<string>('');
@@ -46,7 +51,7 @@ export default function ManagePage() {
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const data = await get<Category[]>('/categories');
+      const data = await api.get<Category[]>('/categories');
       setCategories(data || []);
       setError(null);
     } catch (err) {
@@ -75,9 +80,9 @@ export default function ManagePage() {
 
     try {
       if (isEditing && currentCategory) {
-        await put<Category, Category>(`/categories/${currentCategory.id}`, { ...categoryData, id: currentCategory.id });
+        await api.put<Category, Category>(`/categories/${currentCategory.id}`, { ...categoryData, id: currentCategory.id });
       } else {
-        await post<Category, Omit<Category, 'id'>>('/categories', categoryData);
+        await api.post<Category, Omit<Category, 'id'>>('/categories', categoryData);
       }
       await fetchCategories();
       resetForm();
@@ -99,7 +104,7 @@ export default function ManagePage() {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
       try {
-        await del<null>(`/categories/${id}`);
+        await api.del<null>(`/categories/${id}`);
         await fetchCategories();
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to delete category';
@@ -152,7 +157,7 @@ export default function ManagePage() {
     setFormBLCategoryID('');
   };
 
-  const handleBLEdit = (bl: api.BudgetLine) => {
+  const handleBLEdit = (bl: BudgetLineWithCategory) => {
     setIsEditingBL(true);
     setCurrentBL(bl);
     setFormBLLabel(bl.label);

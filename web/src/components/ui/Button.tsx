@@ -4,15 +4,15 @@ import { buttonClasses, destructiveButtonClasses, secondaryButtonClasses, disabl
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'destructive' | 'secondary';
-  // disabled is already part of ButtonHTMLAttributes
-  // type is already part of ButtonHTMLAttributes
+  variant?: 'primary' | 'destructive' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md';
 }
 
 export const Button: React.FC<ButtonProps> = ({
   children,
   onClick,
   variant = 'primary',
+  size = 'md',
   disabled = false,
   className = '',
   type = 'button',
@@ -27,14 +27,20 @@ export const Button: React.FC<ButtonProps> = ({
     case 'secondary':
       baseClasses = secondaryButtonClasses;
       break;
+    case 'ghost':
+      baseClasses = 'text-gray-700 hover:bg-gray-100';
+      break;
     case 'primary':
     default:
       baseClasses = buttonClasses;
       break;
   }
 
+  const sizeClasses = size === 'sm' ? 'px-2 py-1 text-sm' : 'px-3 py-2';
+
   const combinedClasses = `
     ${baseClasses}
+    ${sizeClasses}
     ${disabled ? disabledClasses : ''}
     ${className}
   `.replace(/\s+/g, ' ').trim(); // Replace multiple spaces with a single space and trim

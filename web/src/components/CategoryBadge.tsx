@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface Category {
-  id: number;
+  id?: number;
   name: string;
   color: string;
 }
