@@ -25,6 +25,10 @@ type MockStore struct {
 	MockUpdateActualLine        func(a *store.ActualLine) error
 	MockGetActualLineByID       func(id int64) (*store.ActualLine, error)
 	MockGetBudgetLineByID       func(id int64) (*store.BudgetLine, error)
+
+	MockGetBoardData     func(monthID int) (*store.BoardDataPayload, error)
+	MockCanFinalizeMonth func(monthID int) (bool, string, error)
+	MockFinalizeMonth    func(monthID int, snapJSON string) (int64, error)
 }
 
 func (m *MockStore) GetAllCategories() ([]store.Category, error) {
@@ -109,6 +113,27 @@ func (m *MockStore) GetBudgetLineByID(id int64) (*store.BudgetLine, error) {
 		return m.MockGetBudgetLineByID(id)
 	}
 	return nil, fmt.Errorf("MockGetBudgetLineByID not implemented")
+}
+
+func (m *MockStore) GetBoardData(monthID int) (*store.BoardDataPayload, error) {
+	if m.MockGetBoardData != nil {
+		return m.MockGetBoardData(monthID)
+	}
+	return nil, fmt.Errorf("MockGetBoardData not implemented")
+}
+
+func (m *MockStore) CanFinalizeMonth(monthID int) (bool, string, error) {
+	if m.MockCanFinalizeMonth != nil {
+		return m.MockCanFinalizeMonth(monthID)
+	}
+	return false, "", fmt.Errorf("MockCanFinalizeMonth not implemented")
+}
+
+func (m *MockStore) FinalizeMonth(monthID int, snapJSON string) (int64, error) {
+	if m.MockFinalizeMonth != nil {
+		return m.MockFinalizeMonth(monthID, snapJSON)
+	}
+	return 0, fmt.Errorf("MockFinalizeMonth not implemented")
 }
 
 func TestCreateBudgetLineHandler(t *testing.T) {
@@ -430,15 +455,14 @@ func TestUpdateBudgetLineHandler(t *testing.T) {
 }
 
 var pointy = struct {
-    String  func(s string) *string
-    Float64 func(f float64) *float64
-    Int     func(i int) *int
+	String  func(s string) *string
+	Float64 func(f float64) *float64
+	Int     func(i int) *int
 }{
-    String:  func(s string) *string { return &s },
-    Float64: func(f float64) *float64 { return &f },
-    Int:     func(i int) *int { return &i },
+	String:  func(s string) *string { return &s },
+	Float64: func(f float64) *float64 { return &f },
+	Int:     func(i int) *int { return &i },
 }
-
 
 func TestDeleteBudgetLineHandler(t *testing.T) {
 	mockStore := &MockStore{}
@@ -507,7 +531,7 @@ func TestUpdateActualLineHandler(t *testing.T) {
 		}{
 			Actual: pointy.Float64(75.50),
 		}
-		
+
 		var capturedActualLine store.ActualLine
 		mockStore.MockGetActualLineByID = func(id int64) (*store.ActualLine, error) {
 			if id != actualLineID {
@@ -540,16 +564,18 @@ func TestUpdateActualLineHandler(t *testing.T) {
 			t.Errorf("expected updated actual %.2f, got %.2f", *updatePayload.Actual, respBody.Actual)
 		}
 		if capturedActualLine.Actual != 75.50 {
-             t.Errorf("expected actual amount %f in mock store, got %f", 75.50, capturedActualLine.Actual)
-        }
+			t.Errorf("expected actual amount %f in mock store, got %f", 75.50, capturedActualLine.Actual)
+		}
 	})
-	
+
 	t.Run("update with amount needing rounding", func(t *testing.T) {
 		actualLineID := int64(5)
 		originalActualLine := &store.ActualLine{ID: actualLineID, BudgetLineID: 11, Actual: 10.0}
-		updatePayload := struct{ Actual *float64 `json:"actual"` }{Actual: pointy.Float64(123.456)}
+		updatePayload := struct {
+			Actual *float64 `json:"actual"`
+		}{Actual: pointy.Float64(123.456)}
 		expectedRounded := 123.46
-		
+
 		var capturedActualLine store.ActualLine
 		mockStore.MockGetActualLineByID = func(id int64) (*store.ActualLine, error) { return originalActualLine, nil }
 		mockStore.MockUpdateActualLine = func(al *store.ActualLine) error {
@@ -579,8 +605,10 @@ func TestUpdateActualLineHandler(t *testing.T) {
 
 	t.Run("update with negative amount - handler validation", func(t *testing.T) {
 		actualLineID := int64(6)
-		updatePayload := struct{ Actual *float64 `json:"actual"` }{Actual: pointy.Float64(-10.50)}
-		
+		updatePayload := struct {
+			Actual *float64 `json:"actual"`
+		}{Actual: pointy.Float64(-10.50)}
+
 		payloadBytes, _ := json.Marshal(updatePayload)
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/api/v1/actual-lines/%d", actualLineID), bytes.NewReader(payloadBytes))
 		rr := httptest.NewRecorder()

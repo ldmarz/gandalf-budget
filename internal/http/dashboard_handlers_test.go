@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anaxita/logit/internal/app"
-	"github.com/anaxita/logit/internal/store"
+	"gandalf-budget/internal/app"
+	"gandalf-budget/internal/store"
 )
 
 func TestGetDashboardData_Success(t *testing.T) {
@@ -67,7 +67,7 @@ func TestGetDashboardData_Success(t *testing.T) {
 	if payload.TotalActual != expectedTotalActual {
 		t.Errorf("payload.TotalActual = %f; want %f", payload.TotalActual, expectedTotalActual)
 	}
-	
+
 	expectedTotalDifference := expectedTotalExpected - expectedTotalActual
 	if payload.TotalDifference != expectedTotalDifference {
 		t.Errorf("payload.TotalDifference = %f; want %f", payload.TotalDifference, expectedTotalDifference)

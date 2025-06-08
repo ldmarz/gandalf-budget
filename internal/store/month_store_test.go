@@ -3,10 +3,7 @@ package store
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"reflect"
 	"testing"
-	"time"
 	// "github.com/jmoiron/sqlx" // Implicitly used
 )
 
@@ -32,7 +29,7 @@ func TestCanFinalizeMonth(t *testing.T) {
 
 	// Month 3: No budget lines
 	month3ID := createTestMonth(t, db, 2023, 3, false)
-	
+
 	// Month 4: Budget lines, but one has no actual_lines record yet
 	// This case depends on how `CanFinalizeMonth` query is written.
 	// The current query `INNER JOIN actual_lines` would not count lines without an actual_line record.
@@ -42,15 +39,15 @@ func TestCanFinalizeMonth(t *testing.T) {
 	// if the other line with an actual IS NOT 0.
 	month4ID := createTestMonth(t, db, 2023, 4, false)
 	bl1m4 := createTestBudgetLine(t, db, month4ID, catID, "Phone", 60.0)
-	createTestActualLine(t, db, bl1m4, 55.0) // Non-zero actual
+	createTestActualLine(t, db, bl1m4, 55.0)                       // Non-zero actual
 	createTestBudgetLine(t, db, month4ID, catID, "Cable TV", 90.0) // No actual_line record for this one
 
 	tests := []struct {
-		name         string
-		monthID      int
-		wantCan      bool
-		wantReason   string // Expected non-empty if wantCan is false
-		wantErr      bool
+		name       string
+		monthID    int
+		wantCan    bool
+		wantReason string // Expected non-empty if wantCan is false
+		wantErr    bool
 	}{
 		{
 			name:       "All actuals non-zero",
@@ -74,13 +71,13 @@ func TestCanFinalizeMonth(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:       "Line missing actual_lines record, other is non-zero", 
+			name: "Line missing actual_lines record, other is non-zero",
 			// This depends on interpretation: "actual amount of 0" vs "no actual record"
 			// Current query: `INNER JOIN actual_lines ... WHERE al.actual = 0`
 			// This means lines without an actual_lines record are NOT considered as having "actual amount of 0".
 			// So, if all *existing* actuals are non-zero, it should be finalizable.
 			monthID:    int(month4ID),
-			wantCan:    true, 
+			wantCan:    true,
 			wantReason: "",
 			wantErr:    false,
 		},
@@ -120,7 +117,7 @@ func TestFinalizeMonth(t *testing.T) {
 	// Setup: A month with budget lines and actuals (all non-zero)
 	catFoodID := createTestCategory(t, db, "Food", "bg-red-500")
 	catRentID := createTestCategory(t, db, "Rent", "bg-blue-500")
-	
+
 	currentYear := 2023
 	currentMonthVal := 11 // November, so next is December
 	originalMonthID := createTestMonth(t, db, currentYear, currentMonthVal, false)
@@ -129,7 +126,7 @@ func TestFinalizeMonth(t *testing.T) {
 	createTestActualLine(t, db, bl1, 280.75)
 	bl2 := createTestBudgetLine(t, db, originalMonthID, catRentID, "Apartment Rent", 1200.00)
 	createTestActualLine(t, db, bl2, 1200.00)
-	bl3 := createTestBudgetLine(t, db, originalMonthID, catFoodID, "Restaurants", 150.00) // No actual line, for testing robustness of cloning (should still clone)
+	_ = createTestBudgetLine(t, db, originalMonthID, catFoodID, "Restaurants", 150.00) // No actual line, for testing robustness of cloning (should still clone)
 
 	snapData := map[string]interface{}{"total_expected": 1650.50, "total_actual": 1480.75}
 	snapJSONBytes, _ := json.Marshal(snapData)
@@ -193,10 +190,14 @@ func TestFinalizeMonth(t *testing.T) {
 		t.Fatalf("Failed to get cloned budget lines for new month %d: %v", newMonthID, err)
 	}
 
-	expectedClonedLines := []struct{ CategoryID int64; Label string; Expected float64 }{
+	expectedClonedLines := []struct {
+		CategoryID int64
+		Label      string
+		Expected   float64
+	}{
+		{catRentID, "Apartment Rent", 1200.00},
 		{catFoodID, "Groceries", 300.50},
 		{catFoodID, "Restaurants", 150.00}, // This line had no actual, should still be cloned
-		{catRentID, "Apartment Rent", 1200.00},
 	}
 	if len(clonedLines) != len(expectedClonedLines) {
 		t.Fatalf("Number of cloned lines mismatch: got %d, want %d. Got: %+v", len(clonedLines), len(expectedClonedLines), clonedLines)
@@ -209,7 +210,7 @@ func TestFinalizeMonth(t *testing.T) {
 				i, cl.CategoryID, cl.Label, cl.Expected, el.CategoryID, el.Label, el.Expected)
 		}
 	}
-	
+
 	// 5. New actual_lines are created for the cloned budget lines, with actual = 0
 	var actualsForNewMonth []ActualLine
 	queryActuals := `
@@ -263,7 +264,7 @@ func TestFinalizeMonth(t *testing.T) {
 	t.Run("FinalizeMonth_ErrorRollbackConceptual", func(t *testing.T) {
 		errorDB := newTestDB(t)
 		errorStore := NewSQLStore(errorDB).(*sqlStore)
-		
+
 		// Create a month and a budget line
 		monthToFailID := createTestMonth(t, errorDB, 2025, 1, false)
 		catToFailID := createTestCategory(t, errorDB, "FailCat", "col")
@@ -288,13 +289,13 @@ func TestFinalizeMonth(t *testing.T) {
 		// Check that no new month was created (as an indicator of rollback)
 		var count int
 		errCheck := errorDB.Get(&count, "SELECT COUNT(*) FROM months WHERE year = ? AND month = ?", 2025, 2) // Example next month
-		if errCheck != nil && errCheck != sql.ErrNoRows { // COUNT should return 0, not ErrNoRows here.
+		if errCheck != nil && errCheck != sql.ErrNoRows {                                                    // COUNT should return 0, not ErrNoRows here.
 			t.Logf("Error checking for next month: %v", errCheck)
 		}
 		if count > 0 {
 			t.Errorf("A new month was created despite an error in FinalizeMonth, indicating potential rollback failure. Count: %d", count)
 		}
-		
+
 		// Check that no annual_snap was created for the invalid month
 		errCheck = errorDB.Get(&count, "SELECT COUNT(*) FROM annual_snaps WHERE month_id = ?", invalidMonthID)
 		if errCheck != nil && errCheck != sql.ErrNoRows {
@@ -305,7 +306,6 @@ func TestFinalizeMonth(t *testing.T) {
 		}
 	})
 }
-
 
 // TestFinalizeMonth_NoBudgetLines: Test finalizing a month that has no budget lines.
 func TestFinalizeMonth_NoBudgetLines(t *testing.T) {

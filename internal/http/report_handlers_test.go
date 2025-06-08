@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"database/sql" // Required for sql.ErrNoRows
-	"github.com/anaxita/logit/internal/store"
+	"gandalf-budget/internal/store"
 	"github.com/stretchr/testify/assert"
 )
 

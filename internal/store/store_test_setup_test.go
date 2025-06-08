@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,7 +18,7 @@ func newTestDB(t *testing.T) *sqlx.DB {
 	}
 
 	migrationPath := filepath.Join("..", "..", "internal", "store", "migrations", "001_init.sql")
-	
+
 	queryBytes, err := os.ReadFile(migrationPath)
 	if err != nil {
 		altMigrationPath := filepath.Join("migrations", "001_init.sql")
