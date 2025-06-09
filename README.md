@@ -70,6 +70,12 @@ To summon Gandalf the Budget to your aid, follow these sacred incantations:
     *   Unleash its power: `./gandalf-budget`
     *   Open your preferred Seeing-Glass (web browser) and navigate to the mystical portal: `http://localhost:8080`.
 
+5.  **Tend the Fires of Development:**
+    *   For rapid frontend changes, run `npm run dev` inside the `web/` directory.
+      This starts Vite's dev server on port 5173 and proxies API requests to the Go backend.
+    *   In a separate terminal, launch the API server with `go run ./cmd/server`.
+    *   Visit `http://localhost:5173` during development; the backend will continue listening on `:8080` for API calls.
+
 ## The Council's Wisdom: Coding Principles ⚖️
 
 Even the wisest of wizards follows guiding principles. Ours are etched in the `PRD_TODO.md` file (Section 10) for all apprentices to study:
