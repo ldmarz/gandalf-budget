@@ -61,6 +61,8 @@ To summon Gandalf the Budget to your aid, follow these sacred incantations:
 
 3.  **Forge the Master Artifact (Build Backend Binary):**
     *   Return to the project root: `cd ..`
+    *   Copy the freshly built assets into the server's embed directory with
+      `cp -r web/dist/* cmd/server/embedded_web_dist/`
     *   Speak the words of power: `go build -o gandalf-budget ./cmd/server`
     *   A single, potent executable named `gandalf-budget` shall appear!
 
